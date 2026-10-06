@@ -1,0 +1,21 @@
+# Build output
+/bin/
+/dist/
+*.exe
+/adblocker
+/adblocker-*
+
+# Test / coverage
+*.test
+*.out
+coverage.*
+
+# Local data
+*.db
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
