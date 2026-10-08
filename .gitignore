@@ -19,3 +19,8 @@ coverage.*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Personal data written by the server
+admin-password.txt
+custom-blocklist.txt
+allowlist.txt

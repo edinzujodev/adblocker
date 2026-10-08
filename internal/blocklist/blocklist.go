@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -65,16 +66,46 @@ func (l *List) Len() int {
 	return len(l.domains)
 }
 
+// Remove unblocks a single domain. It returns false if it was not listed.
+func (l *List) Remove(domain string) bool {
+	d := Normalize(domain)
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	if _, ok := l.domains[d]; !ok {
+		return false
+	}
+	delete(l.domains, d)
+	return true
+}
+
+// Domains returns every listed domain, sorted.
+func (l *List) Domains() []string {
+	l.mu.RLock()
+	out := make([]string, 0, len(l.domains))
+	for d := range l.domains {
+		out = append(out, d)
+	}
+	l.mu.RUnlock()
+	sort.Strings(out)
+	return out
+}
+
 // IsBlocked reports whether domain or any parent domain is in the list.
-// For "a.b.example.com" it checks a.b.example.com, b.example.com,
-// example.com and com.
 func (l *List) IsBlocked(domain string) bool {
+	_, ok := l.Match(domain)
+	return ok
+}
+
+// Match returns the list entry that covers domain: domain itself or its
+// closest listed parent. For "a.b.example.com" it checks a.b.example.com,
+// b.example.com, example.com and com.
+func (l *List) Match(domain string) (string, bool) {
 	d := Normalize(domain)
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	for d != "" {
 		if _, ok := l.domains[d]; ok {
-			return true
+			return d, true
 		}
 		i := strings.IndexByte(d, '.')
 		if i < 0 {
@@ -82,7 +113,15 @@ func (l *List) IsBlocked(domain string) bool {
 		}
 		d = d[i+1:]
 	}
-	return false
+	return "", false
+}
+
+// Valid reports whether domain looks like a real domain name that can be
+// added to a list: valid characters, not an IP address, at least one dot.
+func Valid(domain string) bool {
+	d := Normalize(domain)
+	return validDomain(d) && strings.Contains(d, ".") && !ignored[d] &&
+		!strings.HasPrefix(d, ".") && !strings.Contains(d, "..")
 }
 
 // Parse reads a hosts-format (or plain one-domain-per-line) list and adds

@@ -10,24 +10,28 @@ import (
 	"github.com/miekg/dns"
 
 	"adblocker/internal/blocklist"
+	"adblocker/internal/filter"
+	"adblocker/internal/querylog"
 )
 
 // blockedTTL is the TTL (seconds) on answers for blocked domains.
 const blockedTTL = 60
 
-// Server holds the blocklist and upstream configuration.
+// Server holds the filter and upstream configuration.
 type Server struct {
-	List     *blocklist.List
-	Upstream string // host:port, e.g. 1.1.1.1:53
+	Filter   *filter.Filter
+	Queries  *querylog.Log // may be nil
+	Upstream string        // host:port, e.g. 1.1.1.1:53
 	Logger   *log.Logger
 
 	udp, tcp *dns.Client
 }
 
-// New returns a Server ready to be used as a dns.Handler.
-func New(list *blocklist.List, upstream string, logger *log.Logger) *Server {
+// New returns a Server ready to be used as a dns.Handler. queries may be nil.
+func New(f *filter.Filter, queries *querylog.Log, upstream string, logger *log.Logger) *Server {
 	return &Server{
-		List:     list,
+		Filter:   f,
+		Queries:  queries,
 		Upstream: upstream,
 		Logger:   logger,
 		udp:      &dns.Client{Net: "udp", Timeout: 5 * time.Second},
@@ -47,8 +51,9 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 	client := clientIP(w.RemoteAddr())
 	qtype := dns.TypeToString[q.Qtype]
 
-	if s.List.IsBlocked(q.Name) {
+	if s.Filter.Check(q.Name).Blocked {
 		s.Logger.Printf("BLOCKED  %-15s %-5s %s", client, qtype, q.Name)
+		s.record(client, qtype, q.Name, true)
 		w.WriteMsg(blockedReply(req))
 		return
 	}
@@ -62,7 +67,21 @@ func (s *Server) ServeDNS(w dns.ResponseWriter, req *dns.Msg) {
 		return
 	}
 	s.Logger.Printf("ALLOWED  %-15s %-5s %s", client, qtype, q.Name)
+	s.record(client, qtype, q.Name, false)
 	w.WriteMsg(resp)
+}
+
+func (s *Server) record(client, qtype, name string, blocked bool) {
+	if s.Queries == nil {
+		return
+	}
+	s.Queries.Add(querylog.Entry{
+		Time:    time.Now(),
+		Client:  client,
+		Type:    qtype,
+		Domain:  blocklist.Normalize(name),
+		Blocked: blocked,
+	})
 }
 
 // forward sends req to the upstream over the same transport the client used,

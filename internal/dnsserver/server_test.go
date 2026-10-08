@@ -9,6 +9,8 @@ import (
 	"github.com/miekg/dns"
 
 	"adblocker/internal/blocklist"
+	"adblocker/internal/filter"
+	"adblocker/internal/querylog"
 )
 
 // startServer runs h on a random local UDP port and returns its address.
@@ -39,7 +41,12 @@ func TestBlockedAndForwarded(t *testing.T) {
 
 	list := blocklist.New()
 	list.Add("doubleclick.net")
-	addr := startServer(t, New(list, upstream, log.New(io.Discard, "", 0)))
+	f, err := filter.New(list, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	queries := querylog.New(100)
+	addr := startServer(t, New(f, queries, upstream, log.New(io.Discard, "", 0)))
 
 	query := func(name string, qtype uint16) *dns.Msg {
 		m := new(dns.Msg)
@@ -59,5 +66,14 @@ func TestBlockedAndForwarded(t *testing.T) {
 	}
 	if r := query("example.com", dns.TypeA); len(r.Answer) != 1 || r.Answer[0].(*dns.A).A.String() != "93.184.216.34" {
 		t.Errorf("forwarded A: got %v", r.Answer)
+	}
+	if st := queries.Stats(); st.Total != 3 || st.Blocked != 2 {
+		t.Errorf("stats = %+v, want 3 total, 2 blocked", st)
+	}
+
+	// Switched off, a listed domain is forwarded.
+	f.SetEnabled(false)
+	if r := query("ad.doubleclick.net", dns.TypeA); len(r.Answer) != 1 || r.Answer[0].(*dns.A).A.String() != "93.184.216.34" {
+		t.Errorf("disabled: got %v, want forwarded answer", r.Answer)
 	}
 }
