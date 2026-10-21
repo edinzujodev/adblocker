@@ -50,12 +50,16 @@ export function createClient(opts: ClientOptions = {}) {
   const enc = encodeURIComponent
 
   return {
+    /** Returns the session token; the mobile app stores it for next time. */
     async login(password: string) {
       const r = await request<{ token: string }>("POST", "/api/login", { password })
-      token = opts.token !== undefined ? r.token : token // keep it only for token clients
+      token = r.token
       return r.token
     },
-    logout: () => request<void>("POST", "/api/logout"),
+    async logout() {
+      await request<void>("POST", "/api/logout")
+      token = undefined
+    },
 
     status: () => request<Status>("GET", "/api/status"),
     setEnabled: (enabled: boolean) => request<{ enabled: boolean }>("POST", "/api/enabled", { enabled }),
