@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0f766e">
-  <title>Adblocker</title>
+  <title>EasioProtect</title>
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="style.css">
   <script src="app.js" defer></script>
@@ -14,7 +14,7 @@
   <main id="login-view" class="login" hidden>
     <form id="login-form" class="login-card">
       <img src="icon.svg" alt="" class="login-logo">
-      <h1>Adblocker</h1>
+      <h1>EasioProtect</h1>
       <p class="muted">Enter the password shown when the server started.</p>
       <input id="password" type="password" autocomplete="current-password" placeholder="Password" required>
       <button type="submit" class="btn primary">Log in</button>
@@ -25,7 +25,7 @@
   <!-- App -->
   <div id="app-view" hidden>
     <header class="topbar">
-      <div class="brand"><img src="icon.svg" alt=""> Adblocker</div>
+      <div class="brand"><img src="icon.svg" alt=""> EasioProtect</div>
       <button id="logout" class="btn ghost small">Log out</button>
     </header>
 
@@ -41,6 +41,20 @@
             <input type="checkbox" id="power" role="switch" aria-label="Blocking on or off">
             <span class="slider"></span>
           </label>
+        </div>
+
+        <div id="pc-card" class="card pc" hidden>
+          <div class="pc-row">
+            <div>
+              <div class="pc-title" id="pc-title">Protect this computer</div>
+              <div class="muted" id="pc-sub"></div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="pc-switch" role="switch" aria-label="Protect this computer">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <p id="pc-message" class="pc-message" hidden></p>
         </div>
 
         <div class="stats">

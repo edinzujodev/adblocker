@@ -46,6 +46,7 @@ function showApp() {
 
 function switchTab(name) {
   currentTab = name;
+  if (name === "home") loadThisComputer().catch(handleError);
   for (const btn of document.querySelectorAll(".tabbar button")) {
     btn.classList.toggle("active", btn.dataset.tab === name);
   }
@@ -115,6 +116,37 @@ $("power").addEventListener("change", async (e) => {
   } finally {
     e.target.disabled = false;
   }
+});
+
+// "Protect this computer" changes the DNS settings of the computer running
+// the adblocker. Reading them starts PowerShell, so it is not polled.
+async function loadThisComputer() {
+  const s = await api("GET", "/api/this-computer");
+  $("pc-card").hidden = !s.supported;
+  if (!s.supported) return;
+  const sw = $("pc-switch");
+  sw.checked = s.enabled;
+  sw.disabled = !s.admin || s.adapters.length === 0;
+  $("pc-title").textContent = `Protect this computer (${s.computer})`;
+  const servers = s.adapters.flatMap((a) => a.servers);
+  const backup = servers.find((ip) => ip !== servers[0]);
+  $("pc-sub").textContent = s.enabled
+    ? `This computer is protected by EasioProtect.${backup ? ` If EasioProtect stops, it uses ${backup} so the internet keeps working.` : ""}`
+    : `This computer uses ${servers[0] || "automatic DNS"}, not EasioProtect.`;
+  $("pc-message").hidden = !s.message;
+  $("pc-message").textContent = s.message || "";
+}
+
+$("pc-switch").addEventListener("change", async (e) => {
+  const enabled = e.target.checked;
+  e.target.disabled = true;
+  try {
+    await api("POST", "/api/this-computer", { enabled });
+    toast(enabled ? "This computer is now protected" : "This computer is back to normal DNS");
+  } catch (err) {
+    handleError(err);
+  }
+  await loadThisComputer().catch(handleError);
 });
 
 const reasonText = {

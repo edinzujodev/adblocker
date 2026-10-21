@@ -25,7 +25,7 @@ func newTestServer(t *testing.T) (*httptest.Server, *filter.Filter) {
 	}
 	q := querylog.New(10)
 	q.Add(querylog.Entry{Domain: "ad.doubleclick.net", Blocked: true})
-	ts := httptest.NewServer(New(f, q, "secret", log.New(io.Discard, "", 0)).Handler())
+	ts := httptest.NewServer(New(f, q, nil, "secret", log.New(io.Discard, "", 0)).Handler())
 	t.Cleanup(ts.Close)
 	return ts, f
 }

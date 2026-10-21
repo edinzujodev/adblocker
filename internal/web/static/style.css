@@ -147,6 +147,20 @@ input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
 .switch input:checked + .slider::before { transform: translateX(28px); }
 .switch input:focus-visible + .slider { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+/* This computer */
+.pc-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.pc-title { font-weight: 700; }
+.pc-message {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.switch input:disabled { cursor: default; }
+.switch input:disabled + .slider { opacity: 0.5; }
+
 /* Stats */
 .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
 @media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }

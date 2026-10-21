@@ -21,6 +21,7 @@ import (
 	"adblocker/internal/dnsserver"
 	"adblocker/internal/filter"
 	"adblocker/internal/querylog"
+	"adblocker/internal/sysdns"
 	"adblocker/internal/web"
 )
 
@@ -80,6 +81,12 @@ func main() {
 	}
 	logger.Printf("listening on %s (udp+tcp), upstream %s", *listen, *upstream)
 
+	upstreamHost, _, _ := net.SplitHostPort(*upstream)
+	thisPC := sysdns.New(*listen, upstreamHost)
+	if st, err := thisPC.Status(); err == nil && st.Supported && !st.Admin {
+		logger.Printf("note: start EasioProtect as administrator to switch this computer's DNS from the web interface")
+	}
+
 	if *webAddr != "" {
 		pw, err := webPassword(*password, *passwordFile)
 		if err != nil {
@@ -87,7 +94,7 @@ func main() {
 		}
 		srv := &http.Server{
 			Addr:              *webAddr,
-			Handler:           web.New(f, queries, pw, logger).Handler(),
+			Handler:           web.New(f, queries, thisPC, pw, logger).Handler(),
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 		go func() { errs <- srv.ListenAndServe() }()
@@ -101,9 +108,23 @@ func main() {
 	signal.Notify(sig, os.Interrupt, syscall.SIGTERM)
 	select {
 	case err := <-errs:
+		restoreDNS(logger, thisPC)
 		logger.Fatalf("server error: %v", err)
 	case s := <-sig:
 		logger.Printf("received %s, shutting down", s)
+		restoreDNS(logger, thisPC)
+	}
+}
+
+// restoreDNS puts this computer's DNS back to automatic if it points at the
+// adblocker, which is about to stop answering.
+func restoreDNS(logger *log.Logger, c *sysdns.Controller) {
+	changed, err := c.Restore()
+	switch {
+	case err != nil:
+		logger.Printf("warning: could not restore this computer's DNS settings: %v", err)
+	case changed:
+		logger.Printf("this computer's DNS is back to automatic")
 	}
 }
 

@@ -1,6 +1,6 @@
-# adblocker
+# EasioProtect
 
-A home ad blocker in the style of Pi-hole: a small DNS server that answers
+EasioProtect is a home ad blocker in the style of Pi-hole: a small DNS server that answers
 ad/tracker domains with `0.0.0.0` / `::` and forwards everything else to an
 upstream resolver. It is a single Go binary, built to run on a Windows PC for
 development and on a Raspberry Pi 3 Model B+ (linux/arm64) later.
@@ -68,14 +68,32 @@ web password: k7mxq2vbtr (stored in admin-password.txt)
 Open the phone address in your phone's browser and log in. The interface has
 three tabs:
 
-- **Home**: blocking on/off switch, query counters, and a "test a site" box
-  that says whether a domain is blocked and why.
+- **Home**: blocking on/off switch, a "protect this computer" switch, query
+  counters, and a "test a site" box that says whether a domain is blocked
+  and why.
 - **Activity**: recently blocked domains (with an Allow button) and the most
   blocked domains.
 - **Lists**: your own blocked sites and always-allowed sites. Changes take
   effect immediately, no restart needed. A pasted URL such as
   `https://www.instagram.com/` is stored as `instagram.com`, which covers all
   subdomains.
+
+**Protect this computer** (Windows only) points the DNS of every connected
+network adapter at EasioProtect, or back to automatic. Windows only allows
+this for programs started **as administrator** (right-click PowerShell, *Run
+as administrator*, then start EasioProtect there); otherwise the switch is
+greyed out.
+
+It never cuts the computer off the internet:
+
+- **Backup DNS.** The network's own DNS server (usually the router) stays
+  configured behind EasioProtect. If EasioProtect is not running for any
+  reason (crash, killed in Task Manager, laptop on another Wi-Fi), Windows
+  gets no answer from it and immediately uses the backup. Ads get through,
+  but pages load.
+- **Cleanup.** Switching protection off, or stopping EasioProtect (Ctrl+C or
+  closing its window), puts DNS back to automatic, including the settings
+  Windows saved for Wi-Fi networks the computer is not connected to now.
 
 Windows asks whether to allow the program through the firewall the first
 time; allow it on **private** networks, or your phone can't connect. Because

@@ -25,6 +25,7 @@ import (
 
 	"adblocker/internal/filter"
 	"adblocker/internal/querylog"
+	"adblocker/internal/sysdns"
 )
 
 //go:embed static
@@ -40,6 +41,7 @@ const (
 type Server struct {
 	filter  *filter.Filter
 	queries *querylog.Log
+	sysDNS  *sysdns.Controller // may be nil
 	logger  *log.Logger
 	pwHash  [32]byte
 
@@ -48,11 +50,13 @@ type Server struct {
 	sessions map[string]time.Time // token -> expiry
 }
 
-// New returns a Server that accepts password.
-func New(f *filter.Filter, queries *querylog.Log, password string, logger *log.Logger) *Server {
+// New returns a Server that accepts password. sysDNS may be nil, which hides
+// the "protect this computer" switch.
+func New(f *filter.Filter, queries *querylog.Log, sysDNS *sysdns.Controller, password string, logger *log.Logger) *Server {
 	return &Server{
 		filter:   f,
 		queries:  queries,
+		sysDNS:   sysDNS,
 		logger:   logger,
 		pwHash:   sha256.Sum256([]byte(password)),
 		sessions: make(map[string]time.Time),
@@ -71,6 +75,8 @@ func (s *Server) Handler() http.Handler {
 	api.HandleFunc("GET /api/queries", s.recentQueries)
 	api.HandleFunc("GET /api/top-blocked", s.topBlocked)
 	api.HandleFunc("GET /api/check", s.check)
+	api.HandleFunc("GET /api/this-computer", s.thisComputer)
+	api.HandleFunc("POST /api/this-computer", s.setThisComputer)
 	api.HandleFunc("GET /api/custom", s.listDomains(s.filter.Custom))
 	api.HandleFunc("POST /api/custom", s.addDomain(s.filter.AddCustom))
 	api.HandleFunc("DELETE /api/custom/{domain}", s.removeDomain(s.filter.RemoveCustom))
@@ -93,6 +99,8 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			h.Set("Cache-Control", "no-store")
+		} else {
+			h.Set("Cache-Control", "no-cache") // revalidate, so updates show up
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -228,6 +236,46 @@ func (s *Server) check(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, s.filter.Check(cleanDomain(domain)))
+}
+
+func (s *Server) thisComputer(w http.ResponseWriter, r *http.Request) {
+	if s.sysDNS == nil {
+		writeJSON(w, sysdns.Status{Message: "Not available."})
+		return
+	}
+	st, err := s.sysDNS.Status()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "reading network settings: "+err.Error())
+		return
+	}
+	writeJSON(w, st)
+}
+
+func (s *Server) setThisComputer(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Enabled bool `json:"enabled"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	if s.sysDNS == nil {
+		writeError(w, http.StatusNotImplemented, sysdns.ErrUnsupported.Error())
+		return
+	}
+	err := s.sysDNS.Set(req.Enabled)
+	switch {
+	case errors.Is(err, sysdns.ErrUnsupported):
+		writeError(w, http.StatusNotImplemented, err.Error())
+		return
+	case errors.Is(err, sysdns.ErrNotAdmin):
+		writeError(w, http.StatusForbidden, err.Error())
+		return
+	case err != nil:
+		writeError(w, http.StatusInternalServerError, "changing network settings: "+err.Error())
+		return
+	}
+	s.logger.Printf("web: this computer's DNS switched %s by %s", onOff(req.Enabled), r.RemoteAddr)
+	s.thisComputer(w, r)
 }
 
 func (s *Server) listDomains(list func() []string) http.HandlerFunc {
