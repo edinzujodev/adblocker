@@ -28,8 +28,10 @@ import (
 	"adblocker/internal/sysdns"
 )
 
-//go:embed static
-var static embed.FS
+// dist is the React app built from web/ by `npm run build`.
+//
+//go:embed all:dist
+var dist embed.FS
 
 const (
 	cookieName     = "adblocker_session"
@@ -85,7 +87,7 @@ func (s *Server) Handler() http.Handler {
 	api.HandleFunc("DELETE /api/allowlist/{domain}", s.removeDomain(s.filter.RemoveAllowed))
 	mux.Handle("/api/", s.requireAuth(api))
 
-	files, _ := fs.Sub(static, "static")
+	files, _ := fs.Sub(dist, "dist")
 	mux.Handle("/", http.FileServerFS(files))
 	return securityHeaders(mux)
 }
@@ -96,9 +98,14 @@ func securityHeaders(next http.Handler) http.Handler {
 		h.Set("X-Content-Type-Options", "nosniff")
 		h.Set("X-Frame-Options", "DENY")
 		h.Set("Referrer-Policy", "no-referrer")
-		h.Set("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'")
+		// Scripts only from this server. The UI library sets some styles at
+		// runtime, so inline styles are allowed; they cannot run code.
+		h.Set("Content-Security-Policy", "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'")
 		if strings.HasPrefix(r.URL.Path, "/api/") {
 			h.Set("Cache-Control", "no-store")
+		} else if strings.HasPrefix(r.URL.Path, "/assets/") {
+			// Built files have a content hash in their name, so they never change.
+			h.Set("Cache-Control", "public, max-age=31536000, immutable")
 		} else {
 			h.Set("Cache-Control", "no-cache") // revalidate, so updates show up
 		}
