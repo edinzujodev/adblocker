@@ -24,8 +24,8 @@ export default function ListsScreen() {
         domains={custom.data}
         reload={custom.reload}
         title="My blocked sites"
-        description="Sites you block yourself. Subdomains are included."
-        placeholder="e.g. tiktok.com"
+        description="Sites you block yourself. Subdomains are included. A word without a dot, like instagram, blocks every site containing it."
+        placeholder="e.g. tiktok.com or instagram"
         addLabel="Block"
         empty="You haven't blocked any sites yourself."
         added={(d) => `Blocked ${d}`}

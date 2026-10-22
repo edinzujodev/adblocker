@@ -368,7 +368,7 @@ func writeError(w http.ResponseWriter, code int, msg string) {
 
 func writeDomainError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, filter.ErrInvalidDomain):
+	case errors.Is(err, filter.ErrInvalidDomain), errors.Is(err, filter.ErrInvalidKeyword):
 		writeError(w, http.StatusBadRequest, err.Error())
 	case errors.Is(err, filter.ErrNotFound):
 		writeError(w, http.StatusNotFound, err.Error())

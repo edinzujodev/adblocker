@@ -90,12 +90,65 @@ func TestEditsPersist(t *testing.T) {
 
 func TestInvalidAndMissing(t *testing.T) {
 	f, _, _ := newFilter(t)
-	for _, d := range []string{"", "com", "localhost", "1.2.3.4", "bad domain.com", "a..b.com"} {
+	for _, d := range []string{"1.2.3.4", "bad domain.com", "a..b.com"} {
 		if err := f.AddCustom(d); err != ErrInvalidDomain {
 			t.Errorf("AddCustom(%q) = %v, want ErrInvalidDomain", d, err)
 		}
 	}
+	// Names without a dot are keywords.
+	for _, d := range []string{"", "com", "localhost", "bad word"} {
+		if err := f.AddCustom(d); err != ErrInvalidKeyword {
+			t.Errorf("AddCustom(%q) = %v, want ErrInvalidKeyword", d, err)
+		}
+	}
 	if err := f.RemoveAllowed("nope.com"); err != ErrNotFound {
 		t.Errorf("RemoveAllowed = %v, want ErrNotFound", err)
+	}
+}
+
+func TestKeywords(t *testing.T) {
+	f, custom, allow := newFilter(t)
+	if err := f.AddCustom("Instagram"); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.AddCustom("fb"); err != ErrInvalidKeyword {
+		t.Errorf("AddCustom(fb) = %v, want ErrInvalidKeyword", err)
+	}
+	if err := f.AddAllowed("instagram"); err != ErrInvalidDomain {
+		t.Errorf("AddAllowed(instagram) = %v, want ErrInvalidDomain", err)
+	}
+	if err := f.AddAllowed("help.instagram.net"); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		domain  string
+		blocked bool
+	}{
+		{"instagram.com", true},
+		{"www.instagram.com", true},
+		{"scontent.cdninstagram.com", true},
+		{"instagram.de", true},
+		{"help.instagram.net", false}, // allowlist wins
+		{"example.com", false},
+	}
+	for _, tt := range tests {
+		if r := f.Check(tt.domain); r.Blocked != tt.blocked {
+			t.Errorf("Check(%q) = %+v, want blocked=%v", tt.domain, r, tt.blocked)
+		}
+	}
+
+	again, err := New(blocklist.New(), custom, allow)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r := again.Check("cdninstagram.com"); !r.Blocked || r.Rule != "instagram" {
+		t.Errorf("after reload: %+v", r)
+	}
+	if err := again.RemoveCustom("instagram"); err != nil {
+		t.Fatal(err)
+	}
+	if r := again.Check("instagram.com"); r.Blocked {
+		t.Errorf("after remove: %+v", r)
 	}
 }

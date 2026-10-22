@@ -30,15 +30,20 @@ var ignored = map[string]bool{
 	"0.0.0.0":               true,
 }
 
-// List is a set of blocked domains. It is safe for concurrent use.
+// MinKeywordLen is the shortest keyword accepted, so that a short word such
+// as "ad" cannot block half the internet.
+const MinKeywordLen = 4
+
+// List is a set of blocked domains and keywords. It is safe for concurrent use.
 type List struct {
-	mu      sync.RWMutex
-	domains map[string]struct{}
+	mu       sync.RWMutex
+	domains  map[string]struct{}
+	keywords map[string]struct{} // match any domain that contains them
 }
 
 // New returns an empty list.
 func New() *List {
-	return &List{domains: make(map[string]struct{})}
+	return &List{domains: make(map[string]struct{}), keywords: make(map[string]struct{})}
 }
 
 // Normalize lowercases a domain and strips a trailing dot.
@@ -59,31 +64,53 @@ func (l *List) Add(domain string) bool {
 	return true
 }
 
-// Len returns the number of blocked domains.
+// AddKeyword blocks every domain that contains keyword, e.g. "instagram"
+// covers instagram.com, cdninstagram.com and instagram.de. It returns false
+// unless ValidKeyword(keyword).
+func (l *List) AddKeyword(keyword string) bool {
+	k := Normalize(keyword)
+	if !ValidKeyword(k) {
+		return false
+	}
+	l.mu.Lock()
+	l.keywords[k] = struct{}{}
+	l.mu.Unlock()
+	return true
+}
+
+// Len returns the number of blocked domains and keywords.
 func (l *List) Len() int {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
-	return len(l.domains)
+	return len(l.domains) + len(l.keywords)
 }
 
-// Remove unblocks a single domain. It returns false if it was not listed.
+// Remove unblocks a single domain or keyword. It returns false if it was not
+// listed.
 func (l *List) Remove(domain string) bool {
 	d := Normalize(domain)
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	if _, ok := l.domains[d]; !ok {
-		return false
+	if _, ok := l.domains[d]; ok {
+		delete(l.domains, d)
+		return true
 	}
-	delete(l.domains, d)
-	return true
+	if _, ok := l.keywords[d]; ok {
+		delete(l.keywords, d)
+		return true
+	}
+	return false
 }
 
-// Domains returns every listed domain, sorted.
+// Domains returns every listed domain and keyword, sorted.
 func (l *List) Domains() []string {
 	l.mu.RLock()
-	out := make([]string, 0, len(l.domains))
+	out := make([]string, 0, len(l.domains)+len(l.keywords))
 	for d := range l.domains {
 		out = append(out, d)
+	}
+	for k := range l.keywords {
+		out = append(out, k)
 	}
 	l.mu.RUnlock()
 	sort.Strings(out)
@@ -97,10 +124,11 @@ func (l *List) IsBlocked(domain string) bool {
 }
 
 // Match returns the list entry that covers domain: domain itself or its
-// closest listed parent. For "a.b.example.com" it checks a.b.example.com,
-// b.example.com, example.com and com.
+// closest listed parent, else a keyword it contains. For "a.b.example.com" it
+// checks a.b.example.com, b.example.com, example.com and com.
 func (l *List) Match(domain string) (string, bool) {
-	d := Normalize(domain)
+	name := Normalize(domain)
+	d := name
 	l.mu.RLock()
 	defer l.mu.RUnlock()
 	for d != "" {
@@ -113,6 +141,11 @@ func (l *List) Match(domain string) (string, bool) {
 		}
 		d = d[i+1:]
 	}
+	for k := range l.keywords {
+		if strings.Contains(name, k) {
+			return k, true
+		}
+	}
 	return "", false
 }
 
@@ -122,6 +155,22 @@ func Valid(domain string) bool {
 	d := Normalize(domain)
 	return validDomain(d) && strings.Contains(d, ".") && !ignored[d] &&
 		!strings.HasPrefix(d, ".") && !strings.Contains(d, "..")
+}
+
+// ValidKeyword reports whether keyword can be added with AddKeyword: at least
+// MinKeywordLen letters, digits or hyphens, no dots, and not an always-allowed
+// name such as localhost.
+func ValidKeyword(keyword string) bool {
+	k := Normalize(keyword)
+	if len(k) < MinKeywordLen || ignored[k] {
+		return false
+	}
+	for _, c := range k {
+		if !(c >= 'a' && c <= 'z' || c >= '0' && c <= '9' || c == '-') {
+			return false
+		}
+	}
+	return true
 }
 
 // Parse reads a hosts-format (or plain one-domain-per-line) list and adds

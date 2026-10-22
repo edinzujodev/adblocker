@@ -81,7 +81,10 @@ three tabs:
 - **Lists**: your own blocked sites and always-allowed sites. Changes take
   effect immediately, no restart needed. A pasted URL such as
   `https://www.instagram.com/` is stored as `instagram.com`, which covers all
-  subdomains.
+  subdomains. A word without a dot is a keyword: `instagram` blocks every
+  domain containing it (`instagram.com`, `cdninstagram.com`, `instagram.de`,
+  ...). Keywords need at least 4 letters or digits, and the allowlist still
+  wins over them.
 
 **Protect this computer** (Windows only) points the DNS of every connected
 network adapter at EasioProtect, or back to automatic. Windows only allows

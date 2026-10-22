@@ -25,8 +25,9 @@ const (
 )
 
 var (
-	ErrInvalidDomain = errors.New("not a valid domain name")
-	ErrNotFound      = errors.New("domain is not on the list")
+	ErrInvalidDomain  = errors.New("not a valid domain name")
+	ErrInvalidKeyword = fmt.Errorf("not a valid keyword: use at least %d letters or digits", blocklist.MinKeywordLen)
+	ErrNotFound       = errors.New("domain is not on the list")
 )
 
 // Result explains a blocking decision.
@@ -50,7 +51,7 @@ type Filter struct {
 func New(lists *blocklist.List, customPath, allowPath string) (*Filter, error) {
 	f := &Filter{
 		lists:  lists,
-		custom: &editable{list: blocklist.New(), path: customPath, prefix: "0.0.0.0 ", header: customHeader},
+		custom: &editable{list: blocklist.New(), path: customPath, prefix: "0.0.0.0 ", header: customHeader, keywords: true},
 		allow:  &editable{list: blocklist.New(), path: allowPath, header: allowHeader},
 	}
 	for _, e := range []*editable{f.custom, f.allow} {
@@ -100,7 +101,8 @@ func (f *Filter) BlocklistSize() int { return f.lists.Len() }
 // Custom returns the user's blocked domains, sorted.
 func (f *Filter) Custom() []string { return f.custom.list.Domains() }
 
-// AddCustom blocks domain and its subdomains.
+// AddCustom blocks domain and its subdomains. A name without a dot, such as
+// "instagram", is a keyword and blocks every domain that contains it.
 func (f *Filter) AddCustom(domain string) error { return f.custom.add(domain) }
 
 // RemoveCustom removes domain from the user's block list.
@@ -117,7 +119,8 @@ func (f *Filter) RemoveAllowed(domain string) error { return f.allow.remove(doma
 
 const customHeader = `# My blocked sites. Managed by the adblocker web interface; edits made
 # here while the server runs are overwritten. A domain also blocks its
-# subdomains, so instagram.com covers www.instagram.com.
+# subdomains, so instagram.com covers www.instagram.com. A word without a dot
+# is a keyword: instagram blocks every domain containing "instagram".
 `
 
 const allowHeader = `# Always-allowed sites. These are never blocked, even if a blocklist
@@ -126,10 +129,11 @@ const allowHeader = `# Always-allowed sites. These are never blocked, even if a 
 
 // editable is a list the user changes at runtime, persisted to a file.
 type editable struct {
-	list   *blocklist.List
-	path   string
-	prefix string // written before each domain, e.g. "0.0.0.0 "
-	header string
+	list     *blocklist.List
+	path     string
+	prefix   string // written before each domain, e.g. "0.0.0.0 "
+	header   string
+	keywords bool // names without a dot are keywords
 
 	mu sync.Mutex // serializes changes and file writes
 }
@@ -141,16 +145,33 @@ func (e *editable) load() error {
 	if _, err := e.list.Load(e.path); err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("loading %s: %w", e.path, err)
 	}
+	if e.keywords {
+		// The file stores keywords like domains; Load read them as domains.
+		for _, d := range e.list.Domains() {
+			if !strings.Contains(d, ".") {
+				e.list.Remove(d)
+				e.list.AddKeyword(d)
+			}
+		}
+	}
 	return nil
 }
 
 func (e *editable) add(domain string) error {
-	if !blocklist.Valid(domain) {
+	isKeyword := e.keywords && !strings.Contains(domain, ".")
+	switch {
+	case isKeyword && !blocklist.ValidKeyword(domain):
+		return ErrInvalidKeyword
+	case !isKeyword && !blocklist.Valid(domain):
 		return ErrInvalidDomain
 	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	e.list.Add(domain)
+	if isKeyword {
+		e.list.AddKeyword(domain)
+	} else {
+		e.list.Add(domain)
+	}
 	return e.save()
 }
 
