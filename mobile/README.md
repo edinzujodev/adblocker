@@ -29,4 +29,7 @@ The server address and login token are stored with expo-secure-store.
 - The server speaks plain `http` on the home network. `app.json` allows that:
   Android `usesCleartextTraffic`, iOS `NSAllowsLocalNetworking` and a
   local-network permission text.
+- The project is on Expo SDK 57 to match the Play Store Expo Go. Upgrade to
+  SDK 58 (`npx expo install expo@~58.0.0 && npx expo install --fix`) once
+  the store Expo Go supports it.
 - Store builds (EAS) come later; Expo Go is enough for development.
