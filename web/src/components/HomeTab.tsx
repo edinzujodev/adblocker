@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react"
 import { toast } from "sonner"
 import { cn } from "cn"
 
-import type { CheckResult, Status } from "@/api/types"
+import type { CheckResult, Status } from "@easioprotect/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"

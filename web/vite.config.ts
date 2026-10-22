@@ -8,13 +8,18 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
-    alias: { '@': path.resolve(__dirname, './src') },
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+      // Shared with the mobile app.
+      '@easioprotect/api': path.resolve(__dirname, '../packages/api/src'),
+    },
   },
   build: {
     outDir: '../internal/web/dist',
     emptyOutDir: true,
   },
   server: {
+    fs: { allow: ['..'] },
     proxy: { '/api': 'http://localhost:8080' },
   },
 })

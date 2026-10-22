@@ -1,6 +1,6 @@
 import { toast } from "sonner"
 
-import type { Query } from "@/api/types"
+import type { Query } from "@easioprotect/api"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, ListSkeleton } from "@/components/ListStates"
