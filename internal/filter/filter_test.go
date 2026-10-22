@@ -152,3 +152,28 @@ func TestKeywords(t *testing.T) {
 		t.Errorf("after remove: %+v", r)
 	}
 }
+
+type fakeGroups map[string]string // domain -> group name
+
+func (g fakeGroups) Match(domain string) (string, string, bool) {
+	name, ok := g[domain]
+	return name, domain, ok
+}
+
+func TestGroups(t *testing.T) {
+	f, _, _ := newFilter(t)
+	f.SetGroups(fakeGroups{"roblox.com": "Gaming", "help.roblox.com": "Gaming"})
+	if err := f.AddAllowed("help.roblox.com"); err != nil {
+		t.Fatal(err)
+	}
+	if r := f.Check("roblox.com"); !r.Blocked || r.Reason != ReasonGroup || r.Group != "Gaming" || r.Rule != "roblox.com" {
+		t.Errorf("Check(roblox.com) = %+v", r)
+	}
+	if r := f.Check("help.roblox.com"); r.Blocked || r.Reason != ReasonAllowlist {
+		t.Errorf("allowlist should win: %+v", r)
+	}
+	f.SetEnabled(false)
+	if r := f.Check("roblox.com"); r.Blocked || r.Reason != ReasonDisabled {
+		t.Errorf("disabled: %+v", r)
+	}
+}

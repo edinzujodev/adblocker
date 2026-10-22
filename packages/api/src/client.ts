@@ -1,7 +1,7 @@
 // EasioProtect API client. It only uses fetch, so it works in the browser
 // (session cookie) and in React Native (bearer token from login()).
 
-import type { CheckResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
+import type { BlockGroup, CheckResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
 
 /** Thrown when the session is missing or expired; show the login screen. */
 export class AuthError extends Error {
@@ -72,6 +72,17 @@ export function createClient(opts: ClientOptions = {}) {
     list: (name: ListName) => request<string[]>("GET", `/api/${name}`),
     addTo: (name: ListName, domain: string) => request<void>("POST", `/api/${name}`, { domain }),
     removeFrom: (name: ListName, domain: string) => request<void>("DELETE", `/api/${name}/${enc(domain)}`),
+
+    groups: () => request<BlockGroup[]>("GET", "/api/groups"),
+    createGroup: (name: string, entries: string[] = []) =>
+      request<BlockGroup>("POST", "/api/groups", { name, entries }),
+    updateGroup: (id: string, change: { name?: string; enabled?: boolean }) =>
+      request<BlockGroup>("PATCH", `/api/groups/${enc(id)}`, change),
+    deleteGroup: (id: string) => request<void>("DELETE", `/api/groups/${enc(id)}`),
+    addToGroup: (id: string, entry: string) =>
+      request<BlockGroup>("POST", `/api/groups/${enc(id)}/entries`, { domain: entry }),
+    removeFromGroup: (id: string, entry: string) =>
+      request<BlockGroup>("DELETE", `/api/groups/${enc(id)}/entries/${enc(entry)}`),
 
     thisComputer: () => request<ThisComputer>("GET", "/api/this-computer"),
     setThisComputer: (enabled: boolean) => request<ThisComputer>("POST", "/api/this-computer", { enabled }),

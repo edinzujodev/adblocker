@@ -12,6 +12,7 @@ import (
 
 	"adblocker/internal/blocklist"
 	"adblocker/internal/filter"
+	"adblocker/internal/groups"
 	"adblocker/internal/querylog"
 )
 
@@ -23,9 +24,14 @@ func newTestServer(t *testing.T) (*httptest.Server, *filter.Filter) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	g, err := groups.New("")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.SetGroups(g)
 	q := querylog.New(10)
 	q.Add(querylog.Entry{Domain: "ad.doubleclick.net", Blocked: true})
-	ts := httptest.NewServer(New(f, q, nil, "secret", log.New(io.Discard, "", 0)).Handler())
+	ts := httptest.NewServer(New(f, g, q, nil, "secret", log.New(io.Discard, "", 0)).Handler())
 	t.Cleanup(ts.Close)
 	return ts, f
 }
@@ -154,5 +160,63 @@ func TestRejectsFormPosts(t *testing.T) {
 	resp.Body.Close()
 	if resp.StatusCode != http.StatusUnsupportedMediaType {
 		t.Errorf("form post = %d, want 415", resp.StatusCode)
+	}
+}
+
+func TestGroupsAPI(t *testing.T) {
+	ts, _ := newTestServer(t)
+	jar, _ := cookiejar.New(nil)
+	c := &http.Client{Jar: jar}
+	call(t, c, "POST", ts.URL+"/api/login", `{"password":"secret"}`, nil)
+
+	var list []groups.Group
+	call(t, c, "GET", ts.URL+"/api/groups", "", &list)
+	if len(list) != len(groups.Categories) || list[0].ID != "social" || list[0].Enabled {
+		t.Fatalf("groups = %+v", list)
+	}
+
+	// Switch on a built-in category.
+	var g groups.Group
+	if code := call(t, c, "PATCH", ts.URL+"/api/groups/social", `{"enabled":true}`, &g); code != http.StatusOK || !g.Enabled {
+		t.Fatalf("enable social = %d %+v", code, g)
+	}
+	var r filter.Result
+	call(t, c, "GET", ts.URL+"/api/check?domain=www.instagram.com", "", &r)
+	if !r.Blocked || r.Reason != filter.ReasonGroup || r.Group != "Social media" {
+		t.Errorf("check = %+v", r)
+	}
+	if code := call(t, c, "POST", ts.URL+"/api/groups/social/entries", `{"domain":"example.com"}`, nil); code != http.StatusBadRequest {
+		t.Errorf("edit category = %d, want 400", code)
+	}
+
+	// Make a group of my own, edit it, then delete it.
+	if code := call(t, c, "POST", ts.URL+"/api/groups", `{"name":"Homework","entries":["https://www.roblox.com/"]}`, &g); code != http.StatusOK {
+		t.Fatalf("create = %d", code)
+	}
+	if len(g.Entries) != 1 || g.Entries[0] != "roblox.com" || !g.Enabled {
+		t.Errorf("created %+v", g)
+	}
+	base := ts.URL + "/api/groups/" + g.ID
+	call(t, c, "POST", base+"/entries", `{"domain":"minecraft"}`, &g)
+	if len(g.Entries) != 2 {
+		t.Errorf("after add: %+v", g)
+	}
+	if code := call(t, c, "POST", base+"/entries", `{"domain":"ab"}`, nil); code != http.StatusBadRequest {
+		t.Errorf("short keyword = %d, want 400", code)
+	}
+	call(t, c, "GET", ts.URL+"/api/check?domain=education.minecraft.net", "", &r)
+	if !r.Blocked || r.Group != "Homework" || r.Rule != "minecraft" {
+		t.Errorf("check = %+v", r)
+	}
+	call(t, c, "DELETE", base+"/entries/roblox.com", "", &g)
+	call(t, c, "PATCH", base, `{"name":"School","enabled":false}`, &g)
+	if g.Name != "School" || g.Enabled || len(g.Entries) != 1 {
+		t.Errorf("after edits: %+v", g)
+	}
+	if code := call(t, c, "DELETE", base, "", nil); code != http.StatusNoContent {
+		t.Errorf("delete = %d", code)
+	}
+	if code := call(t, c, "DELETE", base, "", nil); code != http.StatusNotFound {
+		t.Errorf("delete again = %d, want 404", code)
 	}
 }

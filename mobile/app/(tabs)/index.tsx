@@ -157,6 +157,7 @@ function Stats({ status }: { status?: Status }) {
 
 const reasonText: Record<CheckResult['reason'], string> = {
   custom: 'Blocked by your own list',
+  group: 'Blocked by a block group',
   blocklist: 'Blocked by the ad/tracker blocklist',
   allowlist: 'Allowed — it is on your always-allowed list',
   disabled: 'Would be blocked, but blocking is switched off',
@@ -226,7 +227,7 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
                 {result.domain} is {result.blocked ? 'blocked' : 'allowed'}
               </Text>
               <Text className="text-sm text-muted-foreground">
-                {reasonText[result.reason]}
+                {result.group && result.reason === 'group' ? `Blocked by the ${result.group} group` : reasonText[result.reason]}
                 {result.rule && result.rule !== result.domain ? ` (matches ${result.rule})` : ''}
               </Text>
             </View>
@@ -236,7 +237,7 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
                   <Text>Unblock {result.rule}</Text>
                 </Button>
               )}
-              {(result.reason === 'blocklist' || result.reason === 'disabled') && (
+              {(result.reason === 'blocklist' || result.reason === 'group' || result.reason === 'disabled') && (
                 <Button variant="outline" onPress={() => act(() => api.addTo('allowlist', result.domain), `${result.domain} is always allowed`)}>
                   <Text>Always allow {result.domain}</Text>
                 </Button>

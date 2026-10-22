@@ -4,6 +4,7 @@ package blocklist
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -29,6 +30,12 @@ var ignored = map[string]bool{
 	"ip6-allhosts":          true,
 	"0.0.0.0":               true,
 }
+
+// Errors returned by AddEntry.
+var (
+	ErrInvalidDomain  = errors.New("not a valid domain name")
+	ErrInvalidKeyword = fmt.Errorf("not a valid keyword: use at least %d letters or digits", MinKeywordLen)
+)
 
 // MinKeywordLen is the shortest keyword accepted, so that a short word such
 // as "ad" cannot block half the internet.
@@ -76,6 +83,22 @@ func (l *List) AddKeyword(keyword string) bool {
 	l.keywords[k] = struct{}{}
 	l.mu.Unlock()
 	return true
+}
+
+// AddEntry adds a user-typed entry: a name with a dot is a domain, one
+// without is a keyword.
+func (l *List) AddEntry(entry string) error {
+	if !strings.Contains(entry, ".") {
+		if !l.AddKeyword(entry) {
+			return ErrInvalidKeyword
+		}
+		return nil
+	}
+	if !Valid(entry) {
+		return ErrInvalidDomain
+	}
+	l.Add(entry)
+	return nil
 }
 
 // Len returns the number of blocked domains and keywords.

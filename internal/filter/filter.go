@@ -1,6 +1,6 @@
 // Package filter decides whether a domain is blocked. It combines the
 // downloaded blocklists with two lists the user edits at runtime (custom
-// blocks and an allowlist) and an on/off switch.
+// blocks and an allowlist), block groups, and an on/off switch.
 package filter
 
 import (
@@ -19,14 +19,15 @@ import (
 const (
 	ReasonBlocklist = "blocklist" // on a downloaded list
 	ReasonCustom    = "custom"    // on the user's own block list
+	ReasonGroup     = "group"     // in an enabled block group
 	ReasonAllowlist = "allowlist" // explicitly allowed by the user
 	ReasonDisabled  = "disabled"  // blocking is switched off
 	ReasonNotListed = "not-listed"
 )
 
 var (
-	ErrInvalidDomain  = errors.New("not a valid domain name")
-	ErrInvalidKeyword = fmt.Errorf("not a valid keyword: use at least %d letters or digits", blocklist.MinKeywordLen)
+	ErrInvalidDomain  = blocklist.ErrInvalidDomain
+	ErrInvalidKeyword = blocklist.ErrInvalidKeyword
 	ErrNotFound       = errors.New("domain is not on the list")
 )
 
@@ -35,7 +36,13 @@ type Result struct {
 	Domain  string `json:"domain"`
 	Blocked bool   `json:"blocked"`
 	Reason  string `json:"reason"`
-	Rule    string `json:"rule,omitempty"` // list entry that matched
+	Rule    string `json:"rule,omitempty"`  // list entry that matched
+	Group   string `json:"group,omitempty"` // block group's name, for ReasonGroup
+}
+
+// Groups finds the enabled block group that covers a domain.
+type Groups interface {
+	Match(domain string) (group, rule string, ok bool)
 }
 
 // Filter is safe for concurrent use.
@@ -43,6 +50,7 @@ type Filter struct {
 	lists   *blocklist.List // downloaded lists, read-only after startup
 	custom  *editable
 	allow   *editable
+	groups  Groups // may be nil
 	enabled atomic.Bool
 }
 
@@ -63,6 +71,9 @@ func New(lists *blocklist.List, customPath, allowPath string) (*Filter, error) {
 	return f, nil
 }
 
+// SetGroups makes Check consult g. Call it before the Filter is in use.
+func (f *Filter) SetGroups(g Groups) { f.groups = g }
+
 // Check decides whether domain is blocked. The allowlist wins over every
 // block list, so allowing a domain is how a user unblocks something that a
 // downloaded list blocks.
@@ -74,6 +85,10 @@ func (f *Filter) Check(domain string) Result {
 	}
 	rule, ok := f.custom.list.Match(domain)
 	r.Reason = ReasonCustom
+	if !ok && f.groups != nil {
+		r.Group, rule, ok = f.groups.Match(domain)
+		r.Reason = ReasonGroup
+	}
 	if !ok {
 		rule, ok = f.lists.Match(domain)
 		r.Reason = ReasonBlocklist
@@ -158,18 +173,16 @@ func (e *editable) load() error {
 }
 
 func (e *editable) add(domain string) error {
-	isKeyword := e.keywords && !strings.Contains(domain, ".")
-	switch {
-	case isKeyword && !blocklist.ValidKeyword(domain):
-		return ErrInvalidKeyword
-	case !isKeyword && !blocklist.Valid(domain):
-		return ErrInvalidDomain
-	}
 	e.mu.Lock()
 	defer e.mu.Unlock()
-	if isKeyword {
-		e.list.AddKeyword(domain)
+	if e.keywords {
+		if err := e.list.AddEntry(domain); err != nil {
+			return err
+		}
 	} else {
+		if !blocklist.Valid(domain) {
+			return ErrInvalidDomain
+		}
 		e.list.Add(domain)
 	}
 	return e.save()

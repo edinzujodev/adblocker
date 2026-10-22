@@ -11,6 +11,7 @@ development and on a Raspberry Pi 3 Model B+ (linux/arm64) later.
 cmd/adblocker/         main program (flags, startup)
 internal/blocklist/    hosts-format list parsing + domain matching
 internal/filter/       block decision: lists + your own blocks/allows + on/off
+internal/groups/       block groups: built-in categories and your own groups
 internal/querylog/     recent queries and counters for the web interface
 internal/dnsserver/    DNS handler: block or forward, query logging
 internal/web/          web interface: JSON API, serves the embedded web app
@@ -44,6 +45,7 @@ Flags:
 | `-blocklist` | StevenBlack hosts | File path or http(s) URL in hosts format. Repeat the flag (or comma-separate) for several lists. |
 | `-custom` | `custom-blocklist.txt` | Your own blocked sites. Edited from the web interface; don't also pass it to `-blocklist`. |
 | `-allowlist` | `allowlist.txt` | Sites that are never blocked. Edited from the web interface. |
+| `-groups` | `groups.json` | Which categories are on, and your own block groups. Edited from the web interface. |
 | `-web` | `:8080` | Web interface address. `:8080` is reachable from your phone; `""` turns it off. |
 | `-password` | `$ADBLOCKER_PASSWORD` | Web interface password. If unset, one is generated on first run and kept in `-password-file`. |
 | `-password-file` | `admin-password.txt` | Where the generated password is stored. |
@@ -71,13 +73,19 @@ web password: k7mxq2vbtr (stored in admin-password.txt)
 ```
 
 Open the phone address in your phone's browser and log in. The interface has
-three tabs:
+four tabs:
 
 - **Home**: blocking on/off switch, a "protect this computer" switch, query
   counters, and a "test a site" box that says whether a domain is blocked
   and why.
 - **Activity**: recently blocked domains (with an Allow button) and the most
   blocked domains.
+- **Groups**: block whole categories with one switch (social media, video &
+  streaming, gaming, messaging, shopping, dating, gambling, adult, fake news),
+  and make your own groups of sites and keywords to switch on and off
+  together. The first six categories are built in; gambling, adult and fake
+  news use StevenBlack's maintained lists, downloaded when switched on and
+  again at startup. The always-allowed list wins over groups.
 - **Lists**: your own blocked sites and always-allowed sites. Changes take
   effect immediately, no restart needed. A pasted URL such as
   `https://www.instagram.com/` is stored as `instagram.com`, which covers all
@@ -145,6 +153,12 @@ sets a session cookie; send either the cookie or `Authorization: Bearer
 | `DELETE` | `/api/custom/{domain}` | | remove one |
 | `GET` / `POST` | `/api/allowlist` | `{"domain": "..."}` | list / add allowed sites |
 | `DELETE` | `/api/allowlist/{domain}` | | remove one |
+| `GET` | `/api/groups` | | categories and your groups |
+| `POST` | `/api/groups` | `{"name": "...", "entries": [...]}` | create a group |
+| `PATCH` | `/api/groups/{id}` | `{"enabled": true}` and/or `{"name": "..."}` | switch on/off, rename |
+| `DELETE` | `/api/groups/{id}` | | delete one of your groups |
+| `POST` | `/api/groups/{id}/entries` | `{"domain": "..."}` | add a site or keyword to your group |
+| `DELETE` | `/api/groups/{id}/entries/{entry}` | | remove one |
 | `POST` | `/api/logout` | | ends the session |
 
 ## Test

@@ -5,7 +5,7 @@ import { Text } from '@/components/ui/text';
 import { useSession } from '@/lib/session';
 import { THEME } from '@/lib/theme';
 import { Tabs } from 'expo-router';
-import { ActivityIcon, ListIcon, LogOutIcon, ShieldIcon, type LucideIcon } from 'lucide-react-native';
+import { ActivityIcon, LayersIcon, ListIcon, LogOutIcon, ShieldIcon, type LucideIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { View, type ColorValue } from 'react-native';
 
@@ -39,6 +39,7 @@ export default function TabsLayout() {
       }}>
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon(ShieldIcon) }} />
       <Tabs.Screen name="activity" options={{ title: 'Activity', tabBarIcon: tabIcon(ActivityIcon) }} />
+      <Tabs.Screen name="groups" options={{ title: 'Groups', tabBarIcon: tabIcon(LayersIcon) }} />
       <Tabs.Screen name="lists" options={{ title: 'Lists', tabBarIcon: tabIcon(ListIcon) }} />
     </Tabs>
   );

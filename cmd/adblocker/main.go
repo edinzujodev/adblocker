@@ -20,6 +20,7 @@ import (
 	"adblocker/internal/blocklist"
 	"adblocker/internal/dnsserver"
 	"adblocker/internal/filter"
+	"adblocker/internal/groups"
 	"adblocker/internal/querylog"
 	"adblocker/internal/sysdns"
 	"adblocker/internal/web"
@@ -45,6 +46,7 @@ func main() {
 	flag.Var(&sources, "blocklist", "hosts-format blocklist file path or http(s) URL (repeatable)")
 	customPath := flag.String("custom", "custom-blocklist.txt", "file holding your own blocked sites (edited from the web interface)")
 	allowPath := flag.String("allowlist", "allowlist.txt", "file holding always-allowed sites (edited from the web interface)")
+	groupsPath := flag.String("groups", "groups.json", "file holding block group choices (edited from the web interface)")
 	webAddr := flag.String("web", ":8080", `address for the web interface; "" turns it off`)
 	password := flag.String("password", os.Getenv("ADBLOCKER_PASSWORD"), "web interface password (default: $ADBLOCKER_PASSWORD, else read from or generated into -password-file)")
 	passwordFile := flag.String("password-file", "admin-password.txt", "where the generated web password is kept")
@@ -71,6 +73,20 @@ func main() {
 		logger.Fatal(err)
 	}
 	logger.Printf("%d sites on your own block list, %d always allowed", len(f.Custom()), len(f.Allowed()))
+
+	blockGroups, err := groups.New(*groupsPath)
+	if err != nil {
+		logger.Fatal(err)
+	}
+	for _, g := range blockGroups.List() {
+		switch {
+		case g.Error != "":
+			logger.Printf("warning: block group %q: could not download its list: %s", g.Name, g.Error)
+		case g.Enabled:
+			logger.Printf("block group %q is on (%d entries)", g.Name, g.Size)
+		}
+	}
+	f.SetGroups(blockGroups)
 	queries := querylog.New(5000)
 
 	handler := dnsserver.New(f, queries, *upstream, logger)
@@ -94,7 +110,7 @@ func main() {
 		}
 		srv := &http.Server{
 			Addr:              *webAddr,
-			Handler:           web.New(f, queries, thisPC, pw, logger).Handler(),
+			Handler:           web.New(f, blockGroups, queries, thisPC, pw, logger).Handler(),
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 		go func() { errs <- srv.ListenAndServe() }()

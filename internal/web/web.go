@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"adblocker/internal/filter"
+	"adblocker/internal/groups"
 	"adblocker/internal/querylog"
 	"adblocker/internal/sysdns"
 )
@@ -42,6 +43,7 @@ const (
 // Server is the web interface. Create it with New.
 type Server struct {
 	filter  *filter.Filter
+	groups  *groups.Manager
 	queries *querylog.Log
 	sysDNS  *sysdns.Controller // may be nil
 	logger  *log.Logger
@@ -54,9 +56,10 @@ type Server struct {
 
 // New returns a Server that accepts password. sysDNS may be nil, which hides
 // the "protect this computer" switch.
-func New(f *filter.Filter, queries *querylog.Log, sysDNS *sysdns.Controller, password string, logger *log.Logger) *Server {
+func New(f *filter.Filter, g *groups.Manager, queries *querylog.Log, sysDNS *sysdns.Controller, password string, logger *log.Logger) *Server {
 	return &Server{
 		filter:   f,
+		groups:   g,
 		queries:  queries,
 		sysDNS:   sysDNS,
 		logger:   logger,
@@ -85,6 +88,12 @@ func (s *Server) Handler() http.Handler {
 	api.HandleFunc("GET /api/allowlist", s.listDomains(s.filter.Allowed))
 	api.HandleFunc("POST /api/allowlist", s.addDomain(s.filter.AddAllowed))
 	api.HandleFunc("DELETE /api/allowlist/{domain}", s.removeDomain(s.filter.RemoveAllowed))
+	api.HandleFunc("GET /api/groups", s.listGroups)
+	api.HandleFunc("POST /api/groups", s.createGroup)
+	api.HandleFunc("PATCH /api/groups/{id}", s.updateGroup)
+	api.HandleFunc("DELETE /api/groups/{id}", s.deleteGroup)
+	api.HandleFunc("POST /api/groups/{id}/entries", s.addGroupEntry)
+	api.HandleFunc("DELETE /api/groups/{id}/entries/{entry}", s.removeGroupEntry)
 	mux.Handle("/api/", s.requireAuth(api))
 
 	files, _ := fs.Sub(dist, "dist")
@@ -299,9 +308,7 @@ func (s *Server) addDomain(add func(string) error) http.HandlerFunc {
 		if !readJSON(w, r, &req) {
 			return
 		}
-		// "www.instagram.com" means the whole site: block or allow instagram.com,
-		// which covers www and every other subdomain.
-		d := strings.TrimPrefix(cleanDomain(req.Domain), "www.")
+		d := cleanEntry(req.Domain)
 		if err := add(d); err != nil {
 			writeDomainError(w, err)
 			return
@@ -325,6 +332,13 @@ func (s *Server) removeDomain(remove func(string) error) http.HandlerFunc {
 
 // cleanDomain accepts what people paste: "https://www.instagram.com/foo"
 // becomes "www.instagram.com".
+// cleanEntry turns what a user typed into a list entry. "www.instagram.com"
+// means the whole site: instagram.com, which covers www and every other
+// subdomain.
+func cleanEntry(s string) string {
+	return strings.TrimPrefix(cleanDomain(s), "www.")
+}
+
 func cleanDomain(s string) string {
 	s = strings.TrimSpace(strings.ToLower(s))
 	if i := strings.Index(s, "://"); i >= 0 {
@@ -337,6 +351,111 @@ func cleanDomain(s string) string {
 		s = s[:i] // port
 	}
 	return strings.TrimSuffix(s, ".")
+}
+
+// --- block groups ---
+
+func (s *Server) listGroups(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, s.groups.List())
+}
+
+func (s *Server) createGroup(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name    string   `json:"name"`
+		Entries []string `json:"entries"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	for i, e := range req.Entries {
+		req.Entries[i] = cleanEntry(e)
+	}
+	g, err := s.groups.Create(req.Name, req.Entries)
+	if err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	s.logger.Printf("web: %s created block group %q", r.RemoteAddr, g.Name)
+	writeJSON(w, g)
+}
+
+// updateGroup switches a group on or off and/or renames it.
+func (s *Server) updateGroup(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name    *string `json:"name"`
+		Enabled *bool   `json:"enabled"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	id := r.PathValue("id")
+	var g groups.Group
+	var err error
+	if req.Name != nil {
+		if g, err = s.groups.Rename(id, *req.Name); err != nil {
+			writeGroupError(w, err)
+			return
+		}
+	}
+	if req.Enabled != nil {
+		if g, err = s.groups.SetEnabled(id, *req.Enabled); err != nil {
+			writeGroupError(w, err)
+			return
+		}
+		s.logger.Printf("web: block group %q switched %s by %s", g.Name, onOff(*req.Enabled), r.RemoteAddr)
+	}
+	if req.Name == nil && req.Enabled == nil {
+		writeError(w, http.StatusBadRequest, "nothing to change")
+		return
+	}
+	writeJSON(w, g)
+}
+
+func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	if err := s.groups.Delete(r.PathValue("id")); err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	s.logger.Printf("web: %s deleted block group %s", r.RemoteAddr, r.PathValue("id"))
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) addGroupEntry(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Domain string `json:"domain"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	g, err := s.groups.AddEntry(r.PathValue("id"), cleanEntry(req.Domain))
+	if err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	writeJSON(w, g)
+}
+
+func (s *Server) removeGroupEntry(w http.ResponseWriter, r *http.Request) {
+	g, err := s.groups.RemoveEntry(r.PathValue("id"), r.PathValue("entry"))
+	if err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	writeJSON(w, g)
+}
+
+func writeGroupError(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, groups.ErrNoGroup), errors.Is(err, groups.ErrNotFound):
+		writeError(w, http.StatusNotFound, err.Error())
+	case errors.Is(err, groups.ErrBuiltin), errors.Is(err, groups.ErrInvalidName),
+		errors.Is(err, filter.ErrInvalidDomain), errors.Is(err, filter.ErrInvalidKeyword):
+		writeError(w, http.StatusBadRequest, err.Error())
+	case errors.Is(err, groups.ErrDownload):
+		writeError(w, http.StatusBadGateway, err.Error())
+	default:
+		writeError(w, http.StatusInternalServerError, "could not save the groups: "+err.Error())
+	}
 }
 
 // --- helpers ---

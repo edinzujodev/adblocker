@@ -23,13 +23,30 @@ export interface DomainCount {
   count: number
 }
 
-export type CheckReason = "blocklist" | "custom" | "allowlist" | "disabled" | "not-listed"
+export type CheckReason = "blocklist" | "custom" | "group" | "allowlist" | "disabled" | "not-listed"
 
 export interface CheckResult {
   domain: string
   blocked: boolean
   reason: CheckReason
   rule?: string
+  /** Block group's name, for reason "group". */
+  group?: string
+}
+
+/** A built-in category (builtin: true) or one of the user's own groups. */
+export interface BlockGroup {
+  id: string
+  name: string
+  description?: string
+  builtin: boolean
+  enabled: boolean
+  /** Listed domains and keywords, sorted. */
+  entries: string[]
+  /** Entries plus domains from a downloaded list. */
+  size: number
+  /** Why the category's list could not be downloaded. */
+  error?: string
 }
 
 export interface ThisComputer {

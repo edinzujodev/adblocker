@@ -1,19 +1,21 @@
 import { useState } from "react"
-import { ActivityIcon, ListIcon, LogOutIcon, ShieldIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, LayersIcon, ListIcon, LogOutIcon, ShieldIcon, type LucideIcon } from "lucide-react"
 import { cn } from "cn"
 
 import { ActivityTab } from "@/components/ActivityTab"
+import { GroupsTab } from "@/components/GroupsTab"
 import { HomeTab } from "@/components/HomeTab"
 import { ListsTab } from "@/components/ListsTab"
 import { Logo } from "@/components/Logo"
 import { Button } from "@/components/ui/button"
 import { useApi } from "@/lib/api-hooks"
 
-type Tab = "home" | "activity" | "lists"
+type Tab = "home" | "activity" | "groups" | "lists"
 
 const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", icon: ShieldIcon },
   { id: "activity", label: "Activity", icon: ActivityIcon },
+  { id: "groups", label: "Groups", icon: LayersIcon },
   { id: "lists", label: "Lists", icon: ListIcon },
 ]
 
@@ -44,6 +46,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
       <main className="mx-auto grid max-w-xl gap-4 px-4 pt-4 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         {tab === "home" && <HomeTab />}
         {tab === "activity" && <ActivityTab />}
+        {tab === "groups" && <GroupsTab />}
         {tab === "lists" && <ListsTab />}
         <p className="text-center text-sm text-muted-foreground">
           Changes apply right away, but devices may remember old answers for a few minutes.
