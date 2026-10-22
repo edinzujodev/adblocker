@@ -1,5 +1,5 @@
-import { useState, type FormEvent } from "react"
-import { XIcon } from "lucide-react"
+import { useId, useState, type FormEvent } from "react"
+import { BanIcon, CircleCheckIcon, PlusIcon, XIcon, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import type { ListName } from "@easioprotect/api"
@@ -7,16 +7,24 @@ import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { useApi, usePolled } from "@/lib/api-hooks"
 
 export function ListsTab() {
   return (
     <>
+      <div className="grid gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">My lists</h1>
+        <p className="text-muted-foreground">Single sites you always block or always allow.</p>
+      </div>
       <DomainListCard
         list="custom"
-        title="My blocked sites"
-        description="Sites you block yourself. Subdomains are included. A word without a dot, like instagram, blocks every site containing it."
-        placeholder="e.g. tiktok.com or instagram"
+        icon={BanIcon}
+        title="Always block"
+        description="Subdomains are included: instagram.com also blocks www.instagram.com."
+        label="Site or keyword to block"
+        placeholder="tiktok.com or instagram"
+        hint="A word without a dot blocks every site containing it."
         addLabel="Block"
         empty="You haven't blocked any sites yourself."
         added={(d) => `Blocked ${d}`}
@@ -24,9 +32,11 @@ export function ListsTab() {
       />
       <DomainListCard
         list="allowlist"
-        title="Always allowed"
-        description="Never blocked, even if a blocklist contains them."
-        placeholder="e.g. example.com"
+        icon={CircleCheckIcon}
+        title="Always allow"
+        description="These are never blocked, not even by a group or the ad blocklist."
+        label="Site to allow"
+        placeholder="example.com"
         addLabel="Allow"
         empty="No always-allowed sites."
         added={(d) => `${d} is always allowed`}
@@ -38,9 +48,12 @@ export function ListsTab() {
 
 interface DomainListCardProps {
   list: ListName
+  icon: LucideIcon
   title: string
   description: string
+  label: string
   placeholder: string
+  hint?: string
   addLabel: string
   empty: string
   added: (domain: string) => string
@@ -52,6 +65,7 @@ function DomainListCard(p: DomainListCardProps) {
   const { data: domains, reload } = usePolled((api) => api.list(p.list), 0)
   const [input, setInput] = useState("")
   const [busy, setBusy] = useState(false)
+  const id = useId()
 
   async function add(e: FormEvent) {
     e.preventDefault()
@@ -83,25 +97,38 @@ function DomainListCard(p: DomainListCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{p.title}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <p.icon className="size-5 text-muted-foreground" aria-hidden="true" />
+          {p.title}
+        </CardTitle>
         <CardDescription>{p.description}</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-3">
-        <form onSubmit={add} className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            inputMode="url"
-            autoCapitalize="off"
-            autoCorrect="off"
-            spellCheck={false}
-            placeholder={p.placeholder}
-            className="h-10"
-            required
-          />
-          <Button type="submit" size="lg" className="h-10 px-4" disabled={busy}>
-            {p.addLabel}
-          </Button>
+      <CardContent className="grid gap-4">
+        <form onSubmit={add} className="grid gap-2">
+          <Label htmlFor={id}>{p.label}</Label>
+          <div className="flex gap-2">
+            <Input
+              id={id}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              inputMode="url"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder={p.placeholder}
+              aria-describedby={p.hint ? `${id}-hint` : undefined}
+              required
+            />
+            <Button type="submit" disabled={busy}>
+              <PlusIcon aria-hidden="true" />
+              {p.addLabel}
+            </Button>
+          </div>
+          {p.hint && (
+            <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+              {p.hint}
+            </p>
+          )}
         </form>
 
         {!domains ? (
@@ -109,13 +136,18 @@ function DomainListCard(p: DomainListCardProps) {
         ) : domains.length === 0 ? (
           <Empty>{p.empty}</Empty>
         ) : (
-          <ul className="divide-y">
+          <ul className="divide-y rounded-xl border">
             {domains.map((d) => (
-              <li key={d} className="flex items-center justify-between gap-3 py-2">
+              <li key={d} className="flex items-center justify-between gap-3 py-1 pr-1 pl-4">
                 <span className="font-medium break-all">{d}</span>
-                <Button variant="destructive" size="sm" onClick={() => remove(d)} aria-label={`Remove ${d}`}>
-                  <XIcon />
-                  Remove
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => remove(d)}
+                  aria-label={`Remove ${d}`}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <XIcon aria-hidden="true" />
                 </Button>
               </li>
             ))}

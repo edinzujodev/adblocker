@@ -1,7 +1,6 @@
 import { toast } from "sonner"
 
 import type { Query } from "@easioprotect/api"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,30 +22,37 @@ export function ActivityTab() {
     }
   }
 
+  const max = top?.[0]?.count ?? 1
+
   return (
     <>
+      <div className="grid gap-1">
+        <h1 className="text-2xl font-bold tracking-tight">Activity</h1>
+        <p className="text-muted-foreground">What EasioProtect blocked. Updates by itself.</p>
+      </div>
+
       <Card>
         <CardHeader>
-          <CardTitle>Recently blocked</CardTitle>
-          <CardDescription>Updates every few seconds. Tap Allow if something you need was blocked.</CardDescription>
+          <CardTitle>Just blocked</CardTitle>
+          <CardDescription>Something not working? Find it here and tap Allow.</CardDescription>
         </CardHeader>
         <CardContent>
           {!recent ? (
             <ListSkeleton />
           ) : recent.length === 0 ? (
-            <Empty>Nothing blocked yet. Browse a site with ads and check back.</Empty>
+            <Empty>Nothing blocked yet. Open a site with ads and check back.</Empty>
           ) : (
             <ul className="divide-y">
               {groupByDomain(recent).map((q) => (
-                <li key={q.domain} className="flex items-center justify-between gap-3 py-2.5">
+                <li key={q.domain} className="flex items-center justify-between gap-3 py-3">
                   <div className="min-w-0">
                     <p className="font-medium break-all">{q.domain}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {timeAgo(q.time)} · {q.client}
-                      {q.count > 1 && ` · ${q.count}×`}
+                    <p className="text-sm text-muted-foreground">
+                      {timeAgo(q.time)} · from {q.client}
+                      {q.count > 1 && ` · ${q.count} times`}
                     </p>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => allow(q.domain)}>
+                  <Button variant="outline" size="sm" onClick={() => allow(q.domain)} aria-label={`Allow ${q.domain}`}>
                     Allow
                   </Button>
                 </li>
@@ -58,7 +64,7 @@ export function ActivityTab() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Most blocked</CardTitle>
+          <CardTitle>Blocked most often</CardTitle>
           <CardDescription>Since EasioProtect started.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -67,16 +73,21 @@ export function ActivityTab() {
           ) : top.length === 0 ? (
             <Empty>Nothing blocked yet.</Empty>
           ) : (
-            <ul className="divide-y">
+            <ol className="grid gap-3">
               {top.map((d) => (
-                <li key={d.domain} className="flex items-center justify-between gap-3 py-2.5">
-                  <span className="font-medium break-all">{d.domain}</span>
-                  <Badge variant="secondary" className="tabular-nums">
-                    {formatNumber(d.count)}
-                  </Badge>
+                <li key={d.domain} className="grid gap-1.5">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 font-medium break-all">{d.domain}</span>
+                    <span className="shrink-0 text-sm text-muted-foreground tabular-nums">
+                      {formatNumber(d.count)}×
+                    </span>
+                  </div>
+                  <div className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden="true">
+                    <div className="h-full rounded-full bg-chart-1" style={{ width: `${(100 * d.count) / max}%` }} />
+                  </div>
                 </li>
               ))}
-            </ul>
+            </ol>
           )}
         </CardContent>
       </Card>
