@@ -9,24 +9,27 @@ function Switch({
   return (
     <SwitchPrimitives.Root
       className={cn(
-        'flex h-[1.15rem] w-8 shrink-0 flex-row items-center rounded-full border border-transparent shadow-sm shadow-black/5',
+        // 28x48 track; hitSlop below brings the tap area to 48dp.
+        'flex h-7 w-12 shrink-0 flex-row items-center rounded-full border border-transparent px-0.5',
         Platform.select({
           web: 'focus-visible:border-ring focus-visible:ring-ring/50 peer inline-flex outline-none transition-all focus-visible:ring-[3px] disabled:cursor-not-allowed',
         }),
-        props.checked ? 'bg-primary' : 'bg-input dark:bg-input/80',
+        // The "off" track uses muted-foreground so it stays >= 3:1 against the card.
+        props.checked ? 'bg-primary' : 'bg-muted-foreground',
         props.disabled && 'opacity-50',
         className
       )}
+      hitSlop={10}
       {...props}>
       <SwitchPrimitives.Thumb
         className={cn(
-          'bg-background size-4 rounded-full transition-transform',
+          'size-6 rounded-full bg-white shadow-sm shadow-black/20 transition-transform',
           Platform.select({
             web: 'pointer-events-none block ring-0',
           }),
           props.checked
-            ? 'dark:bg-primary-foreground translate-x-3.5'
-            : 'dark:bg-foreground translate-x-0'
+            ? 'dark:bg-primary-foreground translate-x-5'
+            : 'translate-x-0'
         )}
       />
     </SwitchPrimitives.Root>

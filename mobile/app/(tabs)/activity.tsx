@@ -1,5 +1,4 @@
-import { Empty, ListSkeleton, Screen } from '@/components/screen';
-import { Badge } from '@/components/ui/badge';
+import { Empty, ListSkeleton, PageHeader, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -28,31 +27,39 @@ export default function ActivityScreen() {
     }
   }
 
+  const max = top.data?.[0]?.count ?? 1;
+
   return (
     <Screen onRefresh={() => Promise.all([recent.reload(), top.reload()])}>
+      <PageHeader title="Activity" description="What EasioProtect blocked. Updates by itself." />
+
       <Card>
         <CardHeader>
-          <CardTitle>Recently blocked</CardTitle>
-          <CardDescription>Updates every few seconds. Tap Allow if something you need was blocked.</CardDescription>
+          <CardTitle>Just blocked</CardTitle>
+          <CardDescription>Something not working? Find it here and tap Allow.</CardDescription>
         </CardHeader>
         <CardContent>
           {!recent.data ? (
             <ListSkeleton />
           ) : recent.data.length === 0 ? (
-            <Empty>Nothing blocked yet. Browse a site with ads and check back.</Empty>
+            <Empty>Nothing blocked yet. Open a site with ads and check back.</Empty>
           ) : (
             groupByDomain(recent.data).map((q, i) => (
               <React.Fragment key={q.domain}>
                 {i > 0 && <Separator />}
-                <View className="flex-row items-center justify-between gap-3 py-2.5">
+                <View className="flex-row items-center justify-between gap-3 py-3">
                   <View className="flex-1">
                     <Text className="font-medium">{q.domain}</Text>
-                    <Text className="text-xs text-muted-foreground">
-                      {timeAgo(q.time)} · {q.client}
-                      {q.count > 1 ? ` · ${q.count}×` : ''}
+                    <Text className="text-sm text-muted-foreground">
+                      {timeAgo(q.time)} · from {q.client}
+                      {q.count > 1 ? ` · ${q.count} times` : ''}
                     </Text>
                   </View>
-                  <Button variant="outline" size="sm" onPress={() => allow(q.domain)}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onPress={() => allow(q.domain)}
+                    aria-label={`Allow ${q.domain}`}>
                     <Text>Allow</Text>
                   </Button>
                 </View>
@@ -64,25 +71,28 @@ export default function ActivityScreen() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Most blocked</CardTitle>
+          <CardTitle>Blocked most often</CardTitle>
           <CardDescription>Since EasioProtect started.</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="gap-3">
           {!top.data ? (
             <ListSkeleton />
           ) : top.data.length === 0 ? (
             <Empty>Nothing blocked yet.</Empty>
           ) : (
-            top.data.map((d, i) => (
-              <React.Fragment key={d.domain}>
-                {i > 0 && <Separator />}
-                <View className="flex-row items-center justify-between gap-3 py-2.5">
+            top.data.map((d) => (
+              <View key={d.domain} className="gap-1.5">
+                <View className="flex-row items-baseline justify-between gap-3">
                   <Text className="flex-1 font-medium">{d.domain}</Text>
-                  <Badge variant="secondary">
-                    <Text>{formatNumber(d.count)}</Text>
-                  </Badge>
+                  <Text className="text-sm text-muted-foreground">{formatNumber(d.count)}×</Text>
                 </View>
-              </React.Fragment>
+                <View className="h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+                  <View
+                    className="h-full rounded-full bg-chart-1"
+                    style={{ width: `${(100 * d.count) / max}%` }}
+                  />
+                </View>
+              </View>
             ))
           )}
         </CardContent>

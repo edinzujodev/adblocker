@@ -1,10 +1,12 @@
 import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { errorMessage, useSession } from '@/lib/session';
+import { EyeIcon, EyeOffIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -12,8 +14,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 /** Server address + password. The address is remembered for next time. */
 export default function ConnectScreen() {
   const { state, signIn } = useSession();
-  const [server, setServer] = React.useState(state.status === 'signedOut' ? state.server.replace(/^http:\/\//, '') : '');
+  const [server, setServer] = React.useState(
+    state.status === 'signedOut' ? state.server.replace(/^http:\/\//, '') : ''
+  );
   const [password, setPassword] = React.useState('');
+  const [show, setShow] = React.useState(false);
   const [error, setError] = React.useState('');
   const [busy, setBusy] = React.useState(false);
 
@@ -31,19 +36,28 @@ export default function ConnectScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-muted/40">
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-        <ScrollView contentContainerClassName="flex-grow justify-center p-4" keyboardShouldPersistTaps="handled">
+    <SafeAreaView className="flex-1 bg-background">
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        className="flex-1">
+        <ScrollView
+          contentContainerClassName="flex-grow justify-center gap-6 p-4"
+          keyboardShouldPersistTaps="handled">
+          <View className="items-center gap-3">
+            <Logo size={64} />
+            <View className="gap-1">
+              <Text role="heading" aria-level={1} className="text-center text-2xl font-bold">
+                EasioProtect
+              </Text>
+              <Text className="text-center text-muted-foreground">
+                Ad and site blocking for your home network
+              </Text>
+            </View>
+          </View>
+
           <Card>
-            <CardHeader className="items-center gap-2">
-              <Logo size={56} />
-              <CardTitle className="text-2xl">EasioProtect</CardTitle>
-              <CardDescription className="text-center">
-                Connect to EasioProtect on your home network. The address and password are shown when the server starts.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="gap-4">
-              <View className="gap-1.5">
+            <CardContent className="gap-5">
+              <View className="gap-2">
                 <Label nativeID="server">Server address</Label>
                 <Input
                   aria-labelledby="server"
@@ -54,32 +68,56 @@ export default function ConnectScreen() {
                   autoCorrect={false}
                   keyboardType="url"
                   returnKeyType="next"
-                  className="h-11"
                 />
+                <Text className="text-sm text-muted-foreground">
+                  The “on your phone” address from the EasioProtect window. It ends in :8080.
+                </Text>
               </View>
-              <View className="gap-1.5">
+              <View className="gap-2">
                 <Label nativeID="password">Password</Label>
-                <Input
-                  aria-labelledby="password"
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="Password"
-                  secureTextEntry
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="go"
-                  onSubmitEditing={submit}
-                  className="h-11"
-                />
+                <View>
+                  <Input
+                    aria-labelledby="password"
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!show}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    autoComplete="current-password"
+                    returnKeyType="go"
+                    onSubmitEditing={submit}
+                    className="pr-14"
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onPress={() => setShow(!show)}
+                    aria-label={show ? 'Hide password' : 'Show password'}
+                    className="absolute right-0 top-0">
+                    <Icon
+                      as={show ? EyeOffIcon : EyeIcon}
+                      size={20}
+                      className="text-muted-foreground"
+                    />
+                  </Button>
+                </View>
+                <Text className="text-sm text-muted-foreground">
+                  Printed in the EasioProtect window when it starts, and saved in
+                  admin-password.txt.
+                </Text>
               </View>
-              <Button onPress={submit} disabled={busy || !server.trim() || !password} className="h-11">
+              {!!error && (
+                <Text role="alert" className="font-medium text-destructive">
+                  {error}
+                </Text>
+              )}
+              <Button size="lg" onPress={submit} disabled={busy || !server.trim() || !password}>
                 {busy && <ActivityIndicator color="white" />}
                 <Text>Connect</Text>
               </Button>
-              {!!error && <Text className="text-sm text-destructive">{error}</Text>}
             </CardContent>
           </Card>
-          <Text className="mt-4 text-center text-sm text-muted-foreground">
+          <Text className="text-center text-sm text-muted-foreground">
             Your phone must be on the same Wi-Fi as the computer running EasioProtect.
           </Text>
         </ScrollView>

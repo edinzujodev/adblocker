@@ -1,15 +1,16 @@
-import { Empty, ListSkeleton, Screen } from '@/components/screen';
+import { Empty, ListSkeleton, PageHeader, Screen } from '@/components/screen';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Text } from '@/components/ui/text';
 import { useApi } from '@/lib/session';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
 import type { ListName } from '@easioprotect/api';
-import { XIcon } from 'lucide-react-native';
+import { BanIcon, CircleCheckIcon, PlusIcon, XIcon, type LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { View } from 'react-native';
 
@@ -19,13 +20,17 @@ export default function ListsScreen() {
 
   return (
     <Screen onRefresh={() => Promise.all([custom.reload(), allow.reload()])}>
+      <PageHeader title="My lists" description="Single sites you always block or always allow." />
       <DomainListCard
         list="custom"
         domains={custom.data}
         reload={custom.reload}
-        title="My blocked sites"
-        description="Sites you block yourself. Subdomains are included. A word without a dot, like instagram, blocks every site containing it."
-        placeholder="e.g. tiktok.com or instagram"
+        icon={BanIcon}
+        title="Always block"
+        description="Subdomains are included: instagram.com also blocks www.instagram.com."
+        label="Site or keyword to block"
+        placeholder="tiktok.com or instagram"
+        hint="A word without a dot blocks every site containing it."
         addLabel="Block"
         empty="You haven't blocked any sites yourself."
         added={(d) => `Blocked ${d}`}
@@ -35,9 +40,11 @@ export default function ListsScreen() {
         list="allowlist"
         domains={allow.data}
         reload={allow.reload}
-        title="Always allowed"
-        description="Never blocked, even if a blocklist contains them."
-        placeholder="e.g. example.com"
+        icon={CircleCheckIcon}
+        title="Always allow"
+        description="These are never blocked, not even by a group or the ad blocklist."
+        label="Site to allow"
+        placeholder="example.com"
         addLabel="Allow"
         empty="No always-allowed sites."
         added={(d) => `${d} is always allowed`}
@@ -51,9 +58,12 @@ interface DomainListCardProps {
   list: ListName;
   domains?: string[];
   reload: () => Promise<void>;
+  icon: LucideIcon;
   title: string;
   description: string;
+  label: string;
   placeholder: string;
+  hint?: string;
   addLabel: string;
   empty: string;
   added: (domain: string) => string;
@@ -65,6 +75,7 @@ function DomainListCard(p: DomainListCardProps) {
   const toast = useToast();
   const [input, setInput] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const labelId = `${p.list}-input`;
 
   async function add() {
     const domain = input.trim();
@@ -95,25 +106,34 @@ function DomainListCard(p: DomainListCardProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{p.title}</CardTitle>
+        <View className="flex-row items-center gap-2">
+          <Icon as={p.icon} size={20} className="text-muted-foreground" />
+          <CardTitle>{p.title}</CardTitle>
+        </View>
         <CardDescription>{p.description}</CardDescription>
       </CardHeader>
-      <CardContent className="gap-3">
-        <View className="flex-row gap-2">
-          <Input
-            value={input}
-            onChangeText={setInput}
-            placeholder={p.placeholder}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-            returnKeyType="done"
-            onSubmitEditing={add}
-            className="h-10 flex-1"
-          />
-          <Button onPress={add} disabled={busy || !input.trim()} className="h-10 px-4">
-            <Text>{p.addLabel}</Text>
-          </Button>
+      <CardContent className="gap-4">
+        <View className="gap-2">
+          <Label nativeID={labelId}>{p.label}</Label>
+          <View className="flex-row gap-2">
+            <Input
+              aria-labelledby={labelId}
+              value={input}
+              onChangeText={setInput}
+              placeholder={p.placeholder}
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="done"
+              onSubmitEditing={add}
+              className="flex-1"
+            />
+            <Button onPress={add} disabled={busy || !input.trim()}>
+              <Icon as={PlusIcon} size={18} />
+              <Text>{p.addLabel}</Text>
+            </Button>
+          </View>
+          {!!p.hint && <Text className="text-sm text-muted-foreground">{p.hint}</Text>}
         </View>
 
         {!p.domains ? (
@@ -121,15 +141,18 @@ function DomainListCard(p: DomainListCardProps) {
         ) : p.domains.length === 0 ? (
           <Empty>{p.empty}</Empty>
         ) : (
-          <View>
+          <View className="rounded-xl border border-border">
             {p.domains.map((d, i) => (
               <React.Fragment key={d}>
                 {i > 0 && <Separator />}
-                <View className="flex-row items-center justify-between gap-3 py-2">
+                <View className="flex-row items-center justify-between gap-3 pl-4">
                   <Text className="flex-1 font-medium">{d}</Text>
-                  <Button variant="outline" size="sm" onPress={() => remove(d)} aria-label={`Remove ${d}`}>
-                    <Icon as={XIcon} className="text-destructive" />
-                    <Text className="text-destructive">Remove</Text>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onPress={() => remove(d)}
+                    aria-label={`Remove ${d}`}>
+                    <Icon as={XIcon} size={20} className="text-muted-foreground" />
                   </Button>
                 </View>
               </React.Fragment>

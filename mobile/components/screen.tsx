@@ -4,7 +4,13 @@ import * as React from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
 
 /** Scrollable tab content with pull-to-refresh. */
-export function Screen({ children, onRefresh }: { children: React.ReactNode; onRefresh?: () => Promise<unknown> }) {
+export function Screen({
+  children,
+  onRefresh,
+}: {
+  children: React.ReactNode;
+  onRefresh?: () => Promise<unknown>;
+}) {
   const [refreshing, setRefreshing] = React.useState(false);
   const refresh = onRefresh
     ? async () => {
@@ -15,15 +21,27 @@ export function Screen({ children, onRefresh }: { children: React.ReactNode; onR
 
   return (
     <ScrollView
-      className="flex-1 bg-muted/40"
-      contentContainerClassName="gap-4 p-4 pb-8"
+      className="flex-1 bg-background"
+      contentContainerClassName="gap-5 px-4 pb-10 pt-5"
       keyboardShouldPersistTaps="handled"
       refreshControl={refresh && <RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
       {children}
       <Text className="text-center text-sm text-muted-foreground">
-        Changes apply right away, but devices may remember old answers for a few minutes.
+        Changes apply right away. Devices can take a few minutes to notice.
       </Text>
     </ScrollView>
+  );
+}
+
+/** Title and one-line explanation at the top of a tab. */
+export function PageHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <View className="gap-1">
+      <Text role="heading" aria-level={1} className="text-2xl font-bold tracking-tight">
+        {title}
+      </Text>
+      <Text className="text-muted-foreground">{description}</Text>
+    </View>
   );
 }
 
@@ -34,9 +52,9 @@ export function Empty({ children }: { children: React.ReactNode }) {
 export function ListSkeleton() {
   return (
     <View className="gap-3 py-1">
-      <Skeleton className="h-9" />
-      <Skeleton className="h-9" />
-      <Skeleton className="h-9" />
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
+      <Skeleton className="h-12" />
     </View>
   );
 }
