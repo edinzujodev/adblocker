@@ -21,6 +21,7 @@ import { toast } from "sonner"
 import { cn } from "cn"
 
 import type { BlockGroup } from "@easioprotect/api"
+import { BundlesSection } from "@/components/BundlesSection"
 import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,7 +45,12 @@ const categoryIcons: Record<string, LucideIcon> = {
 }
 
 export function GroupsTab() {
-  const { data: groups, reload } = usePolled((api) => api.groups(), 0)
+  const { data: groups, reload: reloadGroups } = usePolled((api) => api.groups(), 0)
+  const { data: bundles, reload: reloadBundles } = usePolled((api) => api.bundles(), 0)
+  // Bundles change which groups block, and groups can leave bundles: reload both.
+  const reload = async () => {
+    await Promise.all([reloadGroups(), reloadBundles()])
+  }
   const categories = groups?.filter((g) => g.builtin)
   const mine = groups?.filter((g) => !g.builtin)
 
@@ -55,9 +61,12 @@ export function GroupsTab() {
         <p className="text-muted-foreground">Block a whole kind of site with one switch.</p>
       </div>
 
+      <BundlesSection bundles={bundles} groups={groups} onChange={reload} />
+
+      <h2 className="pt-2 text-xl font-bold tracking-tight">Categories</h2>
+
       <Card>
         <CardHeader>
-          <CardTitle>Categories</CardTitle>
           <CardDescription>Ready-made lists that we keep up to date.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -104,7 +113,10 @@ function useToggle(group: BlockGroup, onChange: () => Promise<void>) {
   return { busy, toggle }
 }
 
-function OnOff({ on, busy }: { on: boolean; busy: boolean }) {
+/** Whether a group blocks right now: its own switch, or a switched-on bundle. */
+const blocks = (g: BlockGroup) => g.enabled || !!g.blockedBy
+
+function OnOff({ group: g, busy }: { group: BlockGroup; busy: boolean }) {
   if (busy)
     return (
       <span className="inline-flex items-center gap-1 text-sm text-muted-foreground">
@@ -113,8 +125,8 @@ function OnOff({ on, busy }: { on: boolean; busy: boolean }) {
       </span>
     )
   return (
-    <span className={cn("text-sm font-semibold", on ? "text-destructive" : "text-muted-foreground")}>
-      {on ? "Blocked" : "Allowed"}
+    <span className={cn("text-sm font-semibold", blocks(g) ? "text-destructive" : "text-muted-foreground")}>
+      {g.enabled ? "Blocked" : g.blockedBy ? `Blocked by ${g.blockedBy}` : "Allowed"}
     </span>
   )
 }
@@ -126,13 +138,13 @@ function CategoryRow({ group: g, onChange }: { group: BlockGroup; onChange: () =
   const switchId = `cat-${g.id}`
 
   return (
-    <li className={cn("rounded-xl transition-colors duration-200", g.enabled && "bg-destructive/6")}>
+    <li className={cn("rounded-xl transition-colors duration-200", blocks(g) && "bg-destructive/6")}>
       {/* The whole row is the switch's label, so it is one large tap target. */}
       <label htmlFor={switchId} className="flex cursor-pointer items-center gap-3 p-3">
         <span
           className={cn(
             "grid size-11 shrink-0 place-items-center rounded-xl transition-colors duration-200",
-            g.enabled ? "bg-destructive/12 text-destructive" : "bg-muted text-muted-foreground",
+            blocks(g) ? "bg-destructive/12 text-destructive" : "bg-muted text-muted-foreground",
           )}
         >
           <Icon className="size-5" aria-hidden="true" />
@@ -140,10 +152,10 @@ function CategoryRow({ group: g, onChange }: { group: BlockGroup; onChange: () =
         <span className="grid min-w-0 flex-1 gap-0.5">
           <span className="flex flex-wrap items-center gap-x-2">
             <span className="font-semibold">{g.name}</span>
-            <OnOff on={g.enabled} busy={busy} />
+            <OnOff group={g} busy={busy} />
           </span>
           <span className="text-sm text-muted-foreground">{g.description}</span>
-          {g.enabled && g.size > g.entries.length && (
+          {blocks(g) && g.size > g.entries.length && (
             <span className="text-xs text-muted-foreground">{formatNumber(g.size)} sites on the list</span>
           )}
           {g.error && (
@@ -260,16 +272,16 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
   }
 
   return (
-    <Card className={cn(g.enabled && "ring-destructive/25")}>
+    <Card className={cn(blocks(g) && "ring-destructive/25")}>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-x-2 break-all">
           {g.name}
-          <OnOff on={g.enabled} busy={busy} />
+          <OnOff group={g} busy={busy} />
         </CardTitle>
         <CardDescription>
           {g.entries.length === 0
             ? "Add sites or keywords below."
-            : `${g.entries.length} ${g.entries.length === 1 ? "site" : "sites"} · ${g.enabled ? "blocked now" : "switched off"}`}
+            : `${g.entries.length} ${g.entries.length === 1 ? "site" : "sites"} · ${blocks(g) ? "blocked now" : "switched off"}`}
         </CardDescription>
         <CardAction>
           <Switch

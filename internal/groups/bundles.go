@@ -30,7 +30,8 @@ func (b *bundle) remove(id string) {
 }
 
 func (b *bundle) info() Bundle {
-	return Bundle{ID: b.id, Name: b.name, Enabled: b.enabled, Groups: slices.Clone(b.groups)}
+	// Never nil: an empty bundle is [] in JSON, not null.
+	return Bundle{ID: b.id, Name: b.name, Enabled: b.enabled, Groups: append([]string{}, b.groups...)}
 }
 
 // Bundles returns every bundle in the order they were made.

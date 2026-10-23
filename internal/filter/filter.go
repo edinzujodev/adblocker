@@ -36,7 +36,7 @@ type Result struct {
 	Domain  string `json:"domain"`
 	Blocked bool   `json:"blocked"`
 	Reason  string `json:"reason"`
-	Rule    string `json:"rule,omitempty"`  // list entry that matched
+	Rule    string `json:"rule,omitempty"`   // list entry that matched
 	Group   string `json:"group,omitempty"`  // block group's name, for ReasonGroup
 	Bundle  string `json:"bundle,omitempty"` // bundle that switched the group on, if any
 }

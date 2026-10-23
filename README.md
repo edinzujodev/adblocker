@@ -85,7 +85,10 @@ four tabs:
   and make your own groups of sites and keywords to switch on and off
   together. The first six categories are built in; gambling, adult and fake
   news use StevenBlack's maintained lists, downloaded when switched on and
-  again at startup. The always-allowed list wins over groups.
+  again at startup. The always-allowed list wins over groups. **Bundles**
+  put several groups (categories and your own) under one switch, like "Kids
+  mode": while a bundle is on, all its groups block; switching it off leaves
+  each group's own switch as it was.
 - **Lists**: your own blocked sites and always-allowed sites. Changes take
   effect immediately, no restart needed. A pasted URL such as
   `https://www.instagram.com/` is stored as `instagram.com`, which covers all
@@ -159,6 +162,11 @@ sets a session cookie; send either the cookie or `Authorization: Bearer
 | `DELETE` | `/api/groups/{id}` | | delete one of your groups |
 | `POST` | `/api/groups/{id}/entries` | `{"domain": "..."}` | add a site or keyword to your group |
 | `DELETE` | `/api/groups/{id}/entries/{entry}` | | remove one |
+| `GET` | `/api/bundles` | | your bundles |
+| `POST` | `/api/bundles` | `{"name": "...", "groups": [...]}` | create a bundle (off) |
+| `PATCH` | `/api/bundles/{id}` | `{"enabled": true}` and/or `{"name": "..."}` | switch on/off, rename |
+| `PUT` | `/api/bundles/{id}/groups` | `{"groups": [...]}` | set which groups it holds |
+| `DELETE` | `/api/bundles/{id}` | | delete a bundle |
 | `POST` | `/api/logout` | | ends the session |
 
 ## Test

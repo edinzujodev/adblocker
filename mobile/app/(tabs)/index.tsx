@@ -38,7 +38,9 @@ export default function HomeScreen() {
     <Screen onRefresh={() => Promise.all([reload(), groups.reload(), pc.reload()])}>
       <ProtectionCard status={status} onChange={reload} />
       <Stats status={status} />
-      <GroupsSummary names={groups.data?.filter((g) => g.enabled).map((g) => g.name)} />
+      <GroupsSummary
+        names={groups.data?.filter((g) => g.enabled || g.blockedBy).map((g) => g.name)}
+      />
       <CheckSiteCard blockingOn={status?.enabled} />
       <ThisComputerCard data={pc.data} onChange={pc.reload} />
     </Screen>
@@ -217,7 +219,7 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
   const reason =
     result &&
     (result.reason === 'group' && result.group
-      ? `It's in the ${result.group} group.`
+      ? `It's in the ${result.group} group${result.bundle ? `, switched on by the ${result.bundle} bundle` : ''}.`
       : reasonText[result.reason]);
 
   return (

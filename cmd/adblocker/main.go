@@ -84,6 +84,8 @@ func main() {
 			logger.Printf("warning: block group %q: could not download its list: %s", g.Name, g.Error)
 		case g.Enabled:
 			logger.Printf("block group %q is on (%d entries)", g.Name, g.Size)
+		case g.BlockedBy != "":
+			logger.Printf("block group %q is on through bundle %q (%d entries)", g.Name, g.BlockedBy, g.Size)
 		}
 	}
 	f.SetGroups(blockGroups)

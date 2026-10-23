@@ -127,7 +127,8 @@ function Stats({ status }: { status?: Status }) {
 /** What is being blocked beyond ads, with a way to change it. */
 function GroupsSummary({ go }: { go: (tab: Tab) => void }) {
   const { data: groups } = usePolled((api) => api.groups(), 0)
-  const on = groups?.filter((g) => g.enabled) ?? []
+  // Blocking through its own switch or a bundle.
+  const on = groups?.filter((g) => g.enabled || g.blockedBy) ?? []
 
   return (
     <Card>
@@ -208,7 +209,10 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
   }
 
   const reason =
-    result && (result.reason === "group" && result.group ? `It's in the ${result.group} group.` : reasonText[result.reason])
+    result &&
+    (result.reason === "group" && result.group
+      ? `It's in the ${result.group} group${result.bundle ? `, switched on by the ${result.bundle} bundle` : ""}.`
+      : reasonText[result.reason])
 
   return (
     <Card>

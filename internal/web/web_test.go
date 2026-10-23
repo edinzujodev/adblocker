@@ -268,6 +268,14 @@ func TestBundlesAPI(t *testing.T) {
 	if code := call(t, c, "DELETE", base, "", nil); code != http.StatusNoContent {
 		t.Errorf("delete = %d", code)
 	}
+
+	// An empty bundle lists its groups as [], not null (the apps read .length).
+	var raw []map[string]any
+	call(t, c, "POST", ts.URL+"/api/bundles", `{"name":"Empty"}`, nil)
+	call(t, c, "GET", ts.URL+"/api/bundles", "", &raw)
+	if g, ok := raw[0]["groups"].([]any); !ok || len(g) != 0 {
+		t.Errorf("empty bundle groups = %#v, want []", raw[0]["groups"])
+	}
 	if code := call(t, c, "PATCH", base, `{"enabled":true}`, nil); code != http.StatusNotFound {
 		t.Errorf("patch deleted = %d, want 404", code)
 	}

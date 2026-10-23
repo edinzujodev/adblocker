@@ -32,6 +32,8 @@ export interface CheckResult {
   rule?: string
   /** Block group's name, for reason "group". */
   group?: string
+  /** Bundle that switched the group on, if not its own switch. */
+  bundle?: string
 }
 
 /** A built-in category (builtin: true) or one of the user's own groups. */
@@ -40,7 +42,10 @@ export interface BlockGroup {
   name: string
   description?: string
   builtin: boolean
+  /** The group's own switch. */
   enabled: boolean
+  /** A switched-on bundle that blocks this group, even if its own switch is off. */
+  blockedBy?: string
   /** Listed domains and keywords, sorted. */
   entries: string[]
   /** Entries plus domains from a downloaded list. */
@@ -56,6 +61,18 @@ export interface ThisComputer {
   computer: string
   adapters: { name: string; servers: string[] }[] | null
   message?: string
+}
+
+/**
+ * A named set of groups. While it is on, every group in it blocks; switching
+ * it off leaves the groups' own switches as they were.
+ */
+export interface Bundle {
+  id: string
+  name: string
+  enabled: boolean
+  /** Group IDs. */
+  groups: string[]
 }
 
 /** The two lists the user edits. */

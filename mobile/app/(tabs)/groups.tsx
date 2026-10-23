@@ -1,3 +1,4 @@
+import { BundlesSection } from '@/components/bundles';
 import { Empty, ListSkeleton, PageHeader, Screen } from '@/components/screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,7 +48,12 @@ const categoryIcons: Record<string, LucideIcon> = {
 };
 
 export default function GroupsScreen() {
-  const { data: groups, reload } = usePolled((api) => api.groups(), 0);
+  const { data: groups, reload: reloadGroups } = usePolled((api) => api.groups(), 0);
+  const { data: bundles, reload: reloadBundles } = usePolled((api) => api.bundles(), 0);
+  // Bundles change which groups block, and groups can leave bundles: reload both.
+  const reload = async () => {
+    await Promise.all([reloadGroups(), reloadBundles()]);
+  };
   const categories = groups?.filter((g) => g.builtin);
   const mine = groups?.filter((g) => !g.builtin);
 
@@ -55,11 +61,12 @@ export default function GroupsScreen() {
     <Screen onRefresh={reload}>
       <PageHeader title="Groups" description="Block a whole kind of site with one switch." />
 
+      <BundlesSection bundles={bundles} groups={groups} onChange={reload} />
+
+      <View className="pt-2">
+        <PageHeader title="Categories" description="Ready-made lists that we keep up to date." />
+      </View>
       <Card>
-        <CardHeader>
-          <CardTitle>Categories</CardTitle>
-          <CardDescription>Ready-made lists that we keep up to date.</CardDescription>
-        </CardHeader>
         <CardContent className="gap-1 px-2">
           {!categories ? (
             <View className="px-3">
@@ -105,7 +112,10 @@ function useToggle(group: BlockGroup, onChange: () => Promise<void>) {
   return { busy, toggle };
 }
 
-function OnOff({ on, busy }: { on: boolean; busy: boolean }) {
+/** Whether a group blocks right now: its own switch, or a switched-on bundle. */
+const blocks = (g: BlockGroup) => g.enabled || !!g.blockedBy;
+
+function OnOff({ group: g, busy }: { group: BlockGroup; busy: boolean }) {
   if (busy)
     return (
       <View className="flex-row items-center gap-1">
@@ -115,8 +125,11 @@ function OnOff({ on, busy }: { on: boolean; busy: boolean }) {
     );
   return (
     <Text
-      className={cn('text-sm font-semibold', on ? 'text-destructive' : 'text-muted-foreground')}>
-      {on ? 'Blocked' : 'Allowed'}
+      className={cn(
+        'text-sm font-semibold',
+        blocks(g) ? 'text-destructive' : 'text-muted-foreground'
+      )}>
+      {g.enabled ? 'Blocked' : g.blockedBy ? `Blocked by ${g.blockedBy}` : 'Allowed'}
     </Text>
   );
 }
@@ -126,7 +139,7 @@ function CategoryRow({ group: g, onChange }: { group: BlockGroup; onChange: () =
   const [open, setOpen] = React.useState(false);
 
   return (
-    <View className={cn('rounded-xl', g.enabled && 'bg-destructive/10')}>
+    <View className={cn('rounded-xl', blocks(g) && 'bg-destructive/10')}>
       {/* The whole row toggles the switch: one large tap target. */}
       <Pressable
         onPress={() => toggle(!g.enabled)}
@@ -139,21 +152,21 @@ function CategoryRow({ group: g, onChange }: { group: BlockGroup; onChange: () =
         <View
           className={cn(
             'h-12 w-12 items-center justify-center rounded-xl',
-            g.enabled ? 'bg-destructive/15' : 'bg-muted'
+            blocks(g) ? 'bg-destructive/15' : 'bg-muted'
           )}>
           <Icon
             as={categoryIcons[g.id] ?? FolderIcon}
             size={22}
-            className={g.enabled ? 'text-destructive' : 'text-muted-foreground'}
+            className={blocks(g) ? 'text-destructive' : 'text-muted-foreground'}
           />
         </View>
         <View className="flex-1 gap-0.5">
           <View className="flex-row flex-wrap items-center gap-x-2">
             <Text className="font-semibold">{g.name}</Text>
-            <OnOff on={g.enabled} busy={busy} />
+            <OnOff group={g} busy={busy} />
           </View>
           <Text className="text-sm text-muted-foreground">{g.description}</Text>
-          {g.enabled && g.size > g.entries.length && (
+          {blocks(g) && g.size > g.entries.length && (
             <Text className="text-xs text-muted-foreground">
               {formatNumber(g.size)} sites on the list
             </Text>
@@ -280,17 +293,17 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
   }
 
   return (
-    <Card className={cn(g.enabled && 'border-destructive/30')}>
+    <Card className={cn(blocks(g) && 'border-destructive/30')}>
       <CardHeader className="flex-row items-start gap-3">
         <View className="flex-1 gap-1">
           <View className="flex-row flex-wrap items-center gap-x-2">
             <CardTitle>{g.name}</CardTitle>
-            <OnOff on={g.enabled} busy={busy} />
+            <OnOff group={g} busy={busy} />
           </View>
           <CardDescription>
             {g.entries.length === 0
               ? 'Add sites or keywords below.'
-              : `${g.entries.length} ${g.entries.length === 1 ? 'site' : 'sites'} · ${g.enabled ? 'blocked now' : 'switched off'}`}
+              : `${g.entries.length} ${g.entries.length === 1 ? 'site' : 'sites'} · ${blocks(g) ? 'blocked now' : 'switched off'}`}
           </CardDescription>
         </View>
         <Switch

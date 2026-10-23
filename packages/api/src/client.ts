@@ -1,7 +1,7 @@
 // EasioProtect API client. It only uses fetch, so it works in the browser
 // (session cookie) and in React Native (bearer token from login()).
 
-import type { BlockGroup, CheckResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
+import type { BlockGroup, Bundle, CheckResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
 
 /** Thrown when the session is missing or expired; show the login screen. */
 export class AuthError extends Error {
@@ -83,6 +83,14 @@ export function createClient(opts: ClientOptions = {}) {
       request<BlockGroup>("POST", `/api/groups/${enc(id)}/entries`, { domain: entry }),
     removeFromGroup: (id: string, entry: string) =>
       request<BlockGroup>("DELETE", `/api/groups/${enc(id)}/entries/${enc(entry)}`),
+
+    bundles: () => request<Bundle[]>("GET", "/api/bundles"),
+    createBundle: (name: string, groups: string[] = []) => request<Bundle>("POST", "/api/bundles", { name, groups }),
+    updateBundle: (id: string, change: { name?: string; enabled?: boolean }) =>
+      request<Bundle>("PATCH", `/api/bundles/${enc(id)}`, change),
+    setBundleGroups: (id: string, groups: string[]) =>
+      request<Bundle>("PUT", `/api/bundles/${enc(id)}/groups`, { groups }),
+    deleteBundle: (id: string) => request<void>("DELETE", `/api/bundles/${enc(id)}`),
 
     thisComputer: () => request<ThisComputer>("GET", "/api/this-computer"),
     setThisComputer: (enabled: boolean) => request<ThisComputer>("POST", "/api/this-computer", { enabled }),
