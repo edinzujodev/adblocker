@@ -1,6 +1,7 @@
 // Package groups manages block groups: built-in categories (social media,
-// gaming, ...) the user switches on or off, and the user's own named groups
-// of domains and keywords. Choices are saved to a JSON file.
+// gaming, ...) the user switches on or off, the user's own named groups of
+// domains and keywords, and bundles that switch several groups on at once.
+// Choices are saved to a JSON file.
 package groups
 
 import (
@@ -21,9 +22,10 @@ const maxNameLen = 50
 
 var (
 	ErrNoGroup     = errors.New("no such group")
+	ErrNoBundle    = errors.New("no such bundle")
 	ErrNotFound    = errors.New("entry is not in the group")
 	ErrBuiltin     = errors.New("built-in categories can only be switched on or off")
-	ErrInvalidName = fmt.Errorf("give the group a name of up to %d characters", maxNameLen)
+	ErrInvalidName = fmt.Errorf("give it a name of up to %d characters", maxNameLen)
 	ErrDownload    = errors.New("could not download the list")
 )
 
@@ -33,9 +35,10 @@ type Group struct {
 	Name        string   `json:"name"`
 	Description string   `json:"description,omitempty"`
 	Builtin     bool     `json:"builtin"`
-	Enabled     bool     `json:"enabled"`
-	Entries     []string `json:"entries"` // listed domains and keywords, sorted
-	Size        int      `json:"size"`    // entries plus downloaded domains
+	Enabled     bool     `json:"enabled"`             // the group's own switch
+	BlockedBy   string   `json:"blockedBy,omitempty"` // a switched-on bundle that blocks it
+	Entries     []string `json:"entries"`             // listed domains and keywords, sorted
+	Size        int      `json:"size"`                // entries plus downloaded domains
 	Error       string   `json:"error,omitempty"`
 }
 
@@ -47,18 +50,23 @@ type group struct {
 	entries               *blocklist.List // listed domains and keywords
 	downloaded            *blocklist.List // nil until source is loaded
 	err                   string          // last download error
+	via                   string          // name of an enabled bundle containing it
 }
+
+// active reports whether the group blocks: its own switch or a bundle.
+func (g *group) active() bool { return g.enabled || g.via != "" }
 
 // Manager is safe for concurrent use.
 type Manager struct {
 	path string
 
-	mu     sync.RWMutex // guards groups and their fields, and file writes
-	groups []*group     // categories first, then the user's groups
+	mu      sync.RWMutex // guards groups, bundles and their fields, and file writes
+	groups  []*group     // categories first, then the user's groups
+	bundles []*bundle
 }
 
 // New loads the saved choices from path ("" keeps everything in memory) and
-// downloads the lists of enabled categories. A failed download leaves the
+// downloads the lists of active categories. A failed download leaves the
 // category on with only its listed entries; Group.Error says why.
 func New(path string) (*Manager, error) {
 	return newManager(path, Categories)
@@ -78,8 +86,9 @@ func newManager(path string, categories []Category) (*Manager, error) {
 	if err := m.load(); err != nil {
 		return nil, err
 	}
+	m.refresh()
 	for _, g := range m.groups {
-		if g.enabled && g.source != "" {
+		if g.active() && g.source != "" {
 			list, err := download(g.source)
 			if err != nil {
 				g.err = err.Error()
@@ -91,25 +100,29 @@ func newManager(path string, categories []Category) (*Manager, error) {
 	return m, nil
 }
 
-// Match returns the enabled group that blocks domain and the entry that
-// matched.
-func (m *Manager) Match(domain string) (group, rule string, ok bool) {
+// Match returns the active group that blocks domain, the bundle that
+// switched it on ("" if its own switch did) and the entry that matched.
+func (m *Manager) Match(domain string) (group, bundle, rule string, ok bool) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 	for _, g := range m.groups {
-		if !g.enabled {
+		if !g.active() {
 			continue
 		}
+		bundle := g.via
+		if g.enabled {
+			bundle = ""
+		}
 		if rule, ok := g.entries.Match(domain); ok {
-			return g.name, rule, true
+			return g.name, bundle, rule, true
 		}
 		if g.downloaded != nil {
 			if rule, ok := g.downloaded.Match(domain); ok {
-				return g.name, rule, true
+				return g.name, bundle, rule, true
 			}
 		}
 	}
-	return "", "", false
+	return "", "", "", false
 }
 
 // List returns every group: categories first, then the user's groups in the
@@ -130,31 +143,45 @@ func (m *Manager) List() []Group {
 func (m *Manager) SetEnabled(id string, on bool) (Group, error) {
 	m.mu.RLock()
 	g := m.find(id)
-	needList := g != nil && on && g.source != "" && g.downloaded == nil
 	m.mu.RUnlock()
 	if g == nil {
 		return Group{}, ErrNoGroup
 	}
-
-	// Download without holding the lock, so blocking keeps working meanwhile.
-	var list *blocklist.List
-	if needList {
-		var err error
-		if list, err = download(g.source); err != nil {
-			m.mu.Lock()
-			g.err = err.Error()
-			m.mu.Unlock()
-			return Group{}, fmt.Errorf("%w: %v", ErrDownload, err)
+	if on {
+		if err := m.fetchLists([]*group{g}); err != nil {
+			return Group{}, err
 		}
 	}
-
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if list != nil {
-		g.downloaded, g.err = list, ""
-	}
 	g.enabled = on
 	return g.info(), m.save()
+}
+
+// fetchLists downloads the lists of gs that have a source but no list yet. It
+// runs without the lock, so blocking keeps working meanwhile. On failure the
+// group's error is recorded and the error wraps ErrDownload.
+func (m *Manager) fetchLists(gs []*group) error {
+	for _, g := range gs {
+		m.mu.RLock()
+		need := g.source != "" && g.downloaded == nil
+		m.mu.RUnlock()
+		if !need {
+			continue
+		}
+		list, err := download(g.source)
+		m.mu.Lock()
+		if err != nil {
+			g.err = err.Error()
+		} else {
+			g.downloaded, g.err = list, ""
+		}
+		m.mu.Unlock()
+		if err != nil {
+			return fmt.Errorf("%w for %s: %v", ErrDownload, g.name, err)
+		}
+	}
+	return nil
 }
 
 // Create adds a user group, switched on, with the given entries.
@@ -214,6 +241,9 @@ func (m *Manager) Delete(id string) error {
 			return ErrBuiltin
 		}
 		m.groups = append(m.groups[:i], m.groups[i+1:]...)
+		for _, b := range m.bundles {
+			b.remove(id)
+		}
 		return m.save()
 	}
 	return ErrNoGroup
@@ -256,6 +286,7 @@ func (g *group) info() Group {
 		Description: g.description,
 		Builtin:     g.builtin,
 		Enabled:     g.enabled,
+		BlockedBy:   g.via,
 		Entries:     g.entries.Domains(),
 		Size:        size,
 		Error:       g.err,
@@ -286,10 +317,12 @@ func download(src string) (*blocklist.List, error) {
 
 // --- saving ---
 
-// saved is the file format: which categories are on, and the user's groups.
+// saved is the file format: which categories are on, the user's groups and
+// bundles.
 type saved struct {
-	Categories []string     `json:"categories"`
-	Groups     []savedGroup `json:"groups"`
+	Categories []string      `json:"categories"`
+	Groups     []savedGroup  `json:"groups"`
+	Bundles    []savedBundle `json:"bundles"`
 }
 
 type savedGroup struct {
@@ -297,6 +330,13 @@ type savedGroup struct {
 	Name    string   `json:"name"`
 	Enabled bool     `json:"enabled"`
 	Entries []string `json:"entries"`
+}
+
+type savedBundle struct {
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Enabled bool     `json:"enabled"`
+	Groups  []string `json:"groups"`
 }
 
 func (m *Manager) load() error {
@@ -329,15 +369,29 @@ func (m *Manager) load() error {
 		}
 		m.groups = append(m.groups, g)
 	}
+	for _, sb := range s.Bundles {
+		if sb.ID == "" || m.findBundle(sb.ID) != nil {
+			continue
+		}
+		b := &bundle{id: sb.ID, name: sb.Name, enabled: sb.Enabled}
+		for _, id := range sb.Groups {
+			if m.find(id) != nil {
+				b.add(id) // skip groups deleted by hand
+			}
+		}
+		m.bundles = append(m.bundles, b)
+	}
 	return nil
 }
 
-// save writes the file atomically (temp file + rename). Callers hold m.mu.
+// save writes the file atomically (temp file + rename) and refreshes which
+// groups bundles switch on. Callers hold m.mu.
 func (m *Manager) save() error {
+	m.refresh()
 	if m.path == "" {
 		return nil
 	}
-	s := saved{Categories: []string{}, Groups: []savedGroup{}}
+	s := saved{Categories: []string{}, Groups: []savedGroup{}, Bundles: []savedBundle{}}
 	for _, g := range m.groups {
 		switch {
 		case g.builtin && g.enabled:
@@ -345,6 +399,9 @@ func (m *Manager) save() error {
 		case !g.builtin:
 			s.Groups = append(s.Groups, savedGroup{ID: g.id, Name: g.name, Enabled: g.enabled, Entries: g.entries.Domains()})
 		}
+	}
+	for _, b := range m.bundles {
+		s.Bundles = append(s.Bundles, savedBundle{ID: b.id, Name: b.name, Enabled: b.enabled, Groups: b.groups})
 	}
 	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
