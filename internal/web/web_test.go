@@ -220,3 +220,55 @@ func TestGroupsAPI(t *testing.T) {
 		t.Errorf("delete again = %d, want 404", code)
 	}
 }
+
+func TestBundlesAPI(t *testing.T) {
+	ts, _ := newTestServer(t)
+	jar, _ := cookiejar.New(nil)
+	c := &http.Client{Jar: jar}
+	call(t, c, "POST", ts.URL+"/api/login", `{"password":"secret"}`, nil)
+
+	var b groups.Bundle
+	if code := call(t, c, "POST", ts.URL+"/api/bundles", `{"name":"Kids mode","groups":["social","gaming"]}`, &b); code != http.StatusOK {
+		t.Fatalf("create = %d", code)
+	}
+	if b.Enabled || len(b.Groups) != 2 {
+		t.Errorf("created %+v", b)
+	}
+	base := ts.URL + "/api/bundles/" + b.ID
+	call(t, c, "PATCH", base, `{"enabled":true}`, &b)
+	if !b.Enabled {
+		t.Errorf("after enable: %+v", b)
+	}
+
+	var r filter.Result
+	call(t, c, "GET", ts.URL+"/api/check?domain=www.roblox.com", "", &r)
+	if !r.Blocked || r.Group != "Gaming" || r.Bundle != "Kids mode" {
+		t.Errorf("check = %+v", r)
+	}
+	var list []groups.Group
+	call(t, c, "GET", ts.URL+"/api/groups", "", &list)
+	if list[2].ID != "gaming" || list[2].Enabled || list[2].BlockedBy != "Kids mode" {
+		t.Errorf("gaming = %+v", list[2])
+	}
+
+	call(t, c, "PUT", base+"/groups", `{"groups":["social"]}`, &b)
+	call(t, c, "GET", ts.URL+"/api/check?domain=www.roblox.com", "", &r)
+	if r.Blocked {
+		t.Errorf("roblox still blocked after gaming left the bundle: %+v", r)
+	}
+	if code := call(t, c, "PUT", base+"/groups", `{"groups":["nope"]}`, nil); code != http.StatusNotFound {
+		t.Errorf("unknown group = %d, want 404", code)
+	}
+
+	var all []groups.Bundle
+	call(t, c, "GET", ts.URL+"/api/bundles", "", &all)
+	if len(all) != 1 || all[0].Name != "Kids mode" {
+		t.Errorf("bundles = %+v", all)
+	}
+	if code := call(t, c, "DELETE", base, "", nil); code != http.StatusNoContent {
+		t.Errorf("delete = %d", code)
+	}
+	if code := call(t, c, "PATCH", base, `{"enabled":true}`, nil); code != http.StatusNotFound {
+		t.Errorf("patch deleted = %d, want 404", code)
+	}
+}

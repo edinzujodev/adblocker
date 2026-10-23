@@ -94,6 +94,11 @@ func (s *Server) Handler() http.Handler {
 	api.HandleFunc("DELETE /api/groups/{id}", s.deleteGroup)
 	api.HandleFunc("POST /api/groups/{id}/entries", s.addGroupEntry)
 	api.HandleFunc("DELETE /api/groups/{id}/entries/{entry}", s.removeGroupEntry)
+	api.HandleFunc("GET /api/bundles", s.listBundles)
+	api.HandleFunc("POST /api/bundles", s.createBundle)
+	api.HandleFunc("PATCH /api/bundles/{id}", s.updateBundle)
+	api.HandleFunc("PUT /api/bundles/{id}/groups", s.setBundleGroups)
+	api.HandleFunc("DELETE /api/bundles/{id}", s.deleteBundle)
 	mux.Handle("/api/", s.requireAuth(api))
 
 	files, _ := fs.Sub(dist, "dist")
@@ -444,9 +449,88 @@ func (s *Server) removeGroupEntry(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, g)
 }
 
+// --- bundles ---
+
+func (s *Server) listBundles(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, s.groups.Bundles())
+}
+
+func (s *Server) createBundle(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name   string   `json:"name"`
+		Groups []string `json:"groups"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	b, err := s.groups.CreateBundle(req.Name, req.Groups)
+	if err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	s.logger.Printf("web: %s created bundle %q", r.RemoteAddr, b.Name)
+	writeJSON(w, b)
+}
+
+// updateBundle switches a bundle on or off and/or renames it.
+func (s *Server) updateBundle(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Name    *string `json:"name"`
+		Enabled *bool   `json:"enabled"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	if req.Name == nil && req.Enabled == nil {
+		writeError(w, http.StatusBadRequest, "nothing to change")
+		return
+	}
+	id := r.PathValue("id")
+	var b groups.Bundle
+	var err error
+	if req.Name != nil {
+		if b, err = s.groups.RenameBundle(id, *req.Name); err != nil {
+			writeGroupError(w, err)
+			return
+		}
+	}
+	if req.Enabled != nil {
+		if b, err = s.groups.SetBundleEnabled(id, *req.Enabled); err != nil {
+			writeGroupError(w, err)
+			return
+		}
+		s.logger.Printf("web: bundle %q switched %s by %s", b.Name, onOff(*req.Enabled), r.RemoteAddr)
+	}
+	writeJSON(w, b)
+}
+
+func (s *Server) setBundleGroups(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Groups []string `json:"groups"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	b, err := s.groups.SetBundleGroups(r.PathValue("id"), req.Groups)
+	if err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	writeJSON(w, b)
+}
+
+func (s *Server) deleteBundle(w http.ResponseWriter, r *http.Request) {
+	if err := s.groups.DeleteBundle(r.PathValue("id")); err != nil {
+		writeGroupError(w, err)
+		return
+	}
+	s.logger.Printf("web: %s deleted bundle %s", r.RemoteAddr, r.PathValue("id"))
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func writeGroupError(w http.ResponseWriter, err error) {
 	switch {
-	case errors.Is(err, groups.ErrNoGroup), errors.Is(err, groups.ErrNotFound):
+	case errors.Is(err, groups.ErrNoGroup), errors.Is(err, groups.ErrNotFound), errors.Is(err, groups.ErrNoBundle):
 		writeError(w, http.StatusNotFound, err.Error())
 	case errors.Is(err, groups.ErrBuiltin), errors.Is(err, groups.ErrInvalidName),
 		errors.Is(err, filter.ErrInvalidDomain), errors.Is(err, filter.ErrInvalidKeyword):

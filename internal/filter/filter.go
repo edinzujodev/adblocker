@@ -37,12 +37,14 @@ type Result struct {
 	Blocked bool   `json:"blocked"`
 	Reason  string `json:"reason"`
 	Rule    string `json:"rule,omitempty"`  // list entry that matched
-	Group   string `json:"group,omitempty"` // block group's name, for ReasonGroup
+	Group   string `json:"group,omitempty"`  // block group's name, for ReasonGroup
+	Bundle  string `json:"bundle,omitempty"` // bundle that switched the group on, if any
 }
 
-// Groups finds the enabled block group that covers a domain.
+// Groups finds the active block group that covers a domain, and the bundle
+// that switched it on ("" if the group's own switch did).
 type Groups interface {
-	Match(domain string) (group, rule string, ok bool)
+	Match(domain string) (group, bundle, rule string, ok bool)
 }
 
 // Filter is safe for concurrent use.
@@ -86,7 +88,7 @@ func (f *Filter) Check(domain string) Result {
 	rule, ok := f.custom.list.Match(domain)
 	r.Reason = ReasonCustom
 	if !ok && f.groups != nil {
-		r.Group, rule, ok = f.groups.Match(domain)
+		r.Group, r.Bundle, rule, ok = f.groups.Match(domain)
 		r.Reason = ReasonGroup
 	}
 	if !ok {

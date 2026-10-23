@@ -155,9 +155,9 @@ func TestKeywords(t *testing.T) {
 
 type fakeGroups map[string]string // domain -> group name
 
-func (g fakeGroups) Match(domain string) (string, string, bool) {
+func (g fakeGroups) Match(domain string) (string, string, string, bool) {
 	name, ok := g[domain]
-	return name, domain, ok
+	return name, "", domain, ok
 }
 
 func TestGroups(t *testing.T) {
