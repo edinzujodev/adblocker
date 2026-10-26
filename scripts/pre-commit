@@ -1,0 +1,32 @@
+#!/bin/sh
+# Git pre-commit hook: refuses commits that contain secrets.
+# Install once:  cp scripts/pre-commit .git/hooks/pre-commit
+fail=0
+
+# 1. Files that must never be committed.
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$f" in
+    admin-password.txt|*/admin-password.txt|auth.json|*/auth.json|*master.hash|.env|.env.*|*/.env|*.pem|*.key)
+      echo "pre-commit: refusing to commit secret file: $f" >&2; fail=1 ;;
+  esac
+done
+
+added=$(git diff --cached -U0 --diff-filter=ACMR | grep '^+' | grep -v '^+++')
+
+# 2. A stored password hash (pbkdf2-sha256$iterations$salt$key).
+if printf '%s\n' "$added" | grep -Eq 'pbkdf2-sha256\$[0-9]+\$[A-Za-z0-9+/]{16,}\$[A-Za-z0-9+/]{20,}'; then
+  echo "pre-commit: a password hash is staged; hashes must not be committed" >&2; fail=1
+fi
+
+# 3. The current web password itself (from admin-password.txt, if it exists).
+if [ -f admin-password.txt ]; then
+  pw=$(tr -d '\r\n' < admin-password.txt)
+  if [ -n "$pw" ] && printf '%s\n' "$added" | grep -Fq -- "$pw"; then
+    echo "pre-commit: the web password appears in the staged changes" >&2; fail=1
+  fi
+fi
+
+if [ $fail -ne 0 ]; then
+  echo "pre-commit: commit stopped. Unstage it with: git restore --staged <file>" >&2
+  exit 1
+fi

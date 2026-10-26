@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"adblocker/internal/auth"
 	"adblocker/internal/blocklist"
 	"adblocker/internal/filter"
 	"adblocker/internal/groups"
@@ -31,7 +32,13 @@ func newTestServer(t *testing.T) (*httptest.Server, *filter.Filter) {
 	f.SetGroups(g)
 	q := querylog.New(10)
 	q.Add(querylog.Entry{Domain: "ad.doubleclick.net", Blocked: true})
-	ts := httptest.NewServer(New(f, g, q, nil, "secret", log.New(io.Discard, "", 0)).Handler())
+	store, err := auth.Open("", "", "secret", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := New(f, g, q, nil, store, log.New(io.Discard, "", 0))
+	srv.master = func(pw string) bool { return pw == "the master key" }
+	ts := httptest.NewServer(srv.Handler())
 	t.Cleanup(ts.Close)
 	return ts, f
 }
@@ -278,5 +285,66 @@ func TestBundlesAPI(t *testing.T) {
 	}
 	if code := call(t, c, "PATCH", base, `{"enabled":true}`, nil); code != http.StatusNotFound {
 		t.Errorf("patch deleted = %d, want 404", code)
+	}
+}
+
+func TestPasswords(t *testing.T) {
+	ts, _ := newTestServer(t)
+	login := func(pw string) (*http.Client, int, map[string]any) {
+		jar, _ := cookiejar.New(nil)
+		c := &http.Client{Jar: jar}
+		var out map[string]any
+		code := call(t, c, "POST", ts.URL+"/api/login", `{"password":"`+pw+`"}`, &out)
+		return c, code, out
+	}
+
+	// Change the password: needs the current one, signs out other devices.
+	phone, _, _ := login("secret")
+	laptop, code, _ := login("secret")
+	if code != http.StatusOK {
+		t.Fatalf("login = %d", code)
+	}
+	if code := call(t, laptop, "POST", ts.URL+"/api/password", `{"current":"nope","password":"new password 1"}`, nil); code != http.StatusForbidden {
+		t.Errorf("wrong current = %d, want 403", code)
+	}
+	if code := call(t, laptop, "POST", ts.URL+"/api/password", `{"current":"secret","password":"short"}`, nil); code != http.StatusBadRequest {
+		t.Errorf("too short = %d, want 400", code)
+	}
+	if code := call(t, laptop, "POST", ts.URL+"/api/password", `{"current":"secret","password":"new password 1"}`, nil); code != http.StatusNoContent {
+		t.Fatalf("change = %d", code)
+	}
+	if code := call(t, laptop, "GET", ts.URL+"/api/status", "", nil); code != http.StatusOK {
+		t.Errorf("the device that changed it was signed out: %d", code)
+	}
+	if code := call(t, phone, "GET", ts.URL+"/api/status", "", nil); code != http.StatusUnauthorized {
+		t.Errorf("other device still signed in: %d", code)
+	}
+	if _, code, _ := login("secret"); code != http.StatusUnauthorized {
+		t.Errorf("old password still works: %d", code)
+	}
+
+	// Forgot it: the master password gives a reset token, not a session.
+	m, code, out := login("the master key")
+	if code != http.StatusOK || out["reset"] != true || out["token"] != nil {
+		t.Fatalf("master login = %d %v", code, out)
+	}
+	if code := call(t, m, "GET", ts.URL+"/api/status", "", nil); code != http.StatusUnauthorized {
+		t.Errorf("master login opened the dashboard: %d", code)
+	}
+	token, _ := out["resetToken"].(string)
+	if code := call(t, m, "POST", ts.URL+"/api/password/reset", `{"resetToken":"forged","password":"recovered pw"}`, nil); code != http.StatusUnauthorized {
+		t.Errorf("forged reset token = %d, want 401", code)
+	}
+	if code := call(t, m, "POST", ts.URL+"/api/password/reset", `{"resetToken":"`+token+`","password":"recovered pw"}`, nil); code != http.StatusNoContent {
+		t.Fatalf("reset = %d", code)
+	}
+	if code := call(t, laptop, "GET", ts.URL+"/api/status", "", nil); code != http.StatusUnauthorized {
+		t.Errorf("devices still signed in after a reset: %d", code)
+	}
+	if code := call(t, m, "POST", ts.URL+"/api/password/reset", `{"resetToken":"`+token+`","password":"second try"}`, nil); code != http.StatusUnauthorized {
+		t.Errorf("reset token worked twice: %d", code)
+	}
+	if _, code, _ := login("recovered pw"); code != http.StatusOK {
+		t.Errorf("new password doesn't work: %d", code)
 	}
 }

@@ -17,6 +17,7 @@ import (
 
 	"github.com/miekg/dns"
 
+	"adblocker/internal/auth"
 	"adblocker/internal/blocklist"
 	"adblocker/internal/dnsserver"
 	"adblocker/internal/filter"
@@ -48,8 +49,9 @@ func main() {
 	allowPath := flag.String("allowlist", "allowlist.txt", "file holding always-allowed sites (edited from the web interface)")
 	groupsPath := flag.String("groups", "groups.json", "file holding block group choices (edited from the web interface)")
 	webAddr := flag.String("web", ":8080", `address for the web interface; "" turns it off`)
-	password := flag.String("password", os.Getenv("ADBLOCKER_PASSWORD"), "web interface password (default: $ADBLOCKER_PASSWORD, else read from or generated into -password-file)")
-	passwordFile := flag.String("password-file", "admin-password.txt", "where the generated web password is kept")
+	password := flag.String("password", os.Getenv("ADBLOCKER_PASSWORD"), "set the web interface password at every start (default: $ADBLOCKER_PASSWORD); leave unset to change it from Settings")
+	passwordFile := flag.String("password-file", "admin-password.txt", "where the first, generated web password is shown until it is changed")
+	authPath := flag.String("auth", "auth.json", "file holding the web password's hash")
 	flag.Parse()
 
 	logger := log.New(os.Stdout, "", log.LstdFlags)
@@ -106,19 +108,27 @@ func main() {
 	}
 
 	if *webAddr != "" {
-		pw, err := webPassword(*password, *passwordFile)
+		store, generated, err := openAuth(*authPath, *password, *passwordFile)
 		if err != nil {
 			logger.Fatalf("web password: %v", err)
 		}
 		srv := &http.Server{
 			Addr:              *webAddr,
-			Handler:           web.New(f, blockGroups, queries, thisPC, pw, logger).Handler(),
+			Handler:           web.New(f, blockGroups, queries, thisPC, store, logger).Handler(),
 			ReadHeaderTimeout: 10 * time.Second,
 		}
 		go func() { errs <- srv.ListenAndServe() }()
 		logWebURLs(logger, *webAddr)
-		if *password == "" {
-			logger.Printf("web password: %s (stored in %s)", pw, *passwordFile)
+		switch {
+		case generated != "":
+			logger.Printf("web password: %s (also in %s until you change it in Settings)", generated, *passwordFile)
+		case *password != "":
+			logger.Printf("web password: set by -password / $ADBLOCKER_PASSWORD")
+		default:
+			logger.Printf("web password: the one you chose (forgot it? log in with the master password)")
+		}
+		if !auth.HasMaster() {
+			logger.Printf("note: no master password is built in; set one with `go run ./cmd/masterpw` and rebuild")
 		}
 	}
 
@@ -146,12 +156,30 @@ func restoreDNS(logger *log.Logger, c *sysdns.Controller) {
 	}
 }
 
-// webPassword returns explicit if set; otherwise the password stored in file,
-// generating and saving a new one on first run.
-func webPassword(explicit, file string) (string, error) {
+// openAuth opens the password store at path. explicit (the -password flag)
+// replaces the password at every start. Otherwise the first start takes the
+// password from plainFile (as older versions wrote it) or generates one, and
+// returns it so it can be shown.
+func openAuth(path, explicit, plainFile string) (store *auth.Store, generated string, err error) {
 	if explicit != "" {
-		return explicit, nil
+		store, err = auth.Open(path, plainFile, explicit, true)
+		return store, "", err
 	}
+	if _, err := os.Stat(path); err == nil {
+		store, err = auth.Open(path, plainFile, "", false)
+		return store, "", err
+	}
+	pw, err := webPassword(plainFile)
+	if err != nil {
+		return nil, "", err
+	}
+	store, err = auth.Open(path, plainFile, pw, false)
+	return store, pw, err
+}
+
+// webPassword returns the password stored in file, generating and saving a
+// new one if there is none.
+func webPassword(file string) (string, error) {
 	if b, err := os.ReadFile(file); err == nil {
 		if pw := strings.TrimSpace(string(b)); pw != "" {
 			return pw, nil

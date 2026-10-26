@@ -1,7 +1,7 @@
 // EasioProtect API client. It only uses fetch, so it works in the browser
 // (session cookie) and in React Native (bearer token from login()).
 
-import type { BlockGroup, Bundle, CheckResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
+import type { BlockGroup, Bundle, CheckResult, LoginResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"
 
 /** Thrown when the session is missing or expired; show the login screen. */
 export class AuthError extends Error {
@@ -50,12 +50,22 @@ export function createClient(opts: ClientOptions = {}) {
   const enc = encodeURIComponent
 
   return {
-    /** Returns the session token; the mobile app stores it for next time. */
-    async login(password: string) {
-      const r = await request<{ token: string }>("POST", "/api/login", { password })
-      token = r.token
-      return r.token
+    /**
+     * Logs in. With the normal password it returns the session token (the
+     * mobile app stores it for next time). With the master password it
+     * returns { reset: true, resetToken }: pass that to resetPassword().
+     */
+    async login(password: string): Promise<LoginResult> {
+      const r = await request<LoginResult>("POST", "/api/login", { password })
+      if (r.token) token = r.token
+      return r
     },
+    /** Sets a new password after a master-password login. Every device is signed out. */
+    resetPassword: (resetToken: string, password: string) =>
+      request<void>("POST", "/api/password/reset", { resetToken, password }),
+    /** Changes the password; other devices are signed out. */
+    changePassword: (current: string, password: string) =>
+      request<void>("POST", "/api/password", { current, password }),
     async logout() {
       await request<void>("POST", "/api/logout")
       token = undefined

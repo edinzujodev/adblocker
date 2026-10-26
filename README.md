@@ -47,8 +47,9 @@ Flags:
 | `-allowlist` | `allowlist.txt` | Sites that are never blocked. Edited from the web interface. |
 | `-groups` | `groups.json` | Which categories are on, and your own block groups. Edited from the web interface. |
 | `-web` | `:8080` | Web interface address. `:8080` is reachable from your phone; `""` turns it off. |
-| `-password` | `$ADBLOCKER_PASSWORD` | Web interface password. If unset, one is generated on first run and kept in `-password-file`. |
-| `-password-file` | `admin-password.txt` | Where the generated password is stored. |
+| `-password` | `$ADBLOCKER_PASSWORD` | Sets the web password at every start. Leave it unset so the password can be changed in Settings. |
+| `-password-file` | `admin-password.txt` | Where the first, generated password is shown. Deleted once the password is changed. |
+| `-auth` | `auth.json` | Holds the web password's hash (never the password itself). |
 
 Examples:
 
@@ -69,7 +70,7 @@ On startup the server prints the web addresses and the password:
 ```
 web interface: http://localhost:8080
   on your phone (same Wi-Fi): http://192.168.0.23:8080
-web password: k7mxq2vbtr (stored in admin-password.txt)
+web password: k7mxq2vbtr (also in admin-password.txt until you change it in Settings)
 ```
 
 Open the phone address in your phone's browser and log in. The interface has
@@ -138,15 +139,43 @@ npm run dev     # http://localhost:5173 with hot reload, API proxied to :8080
 When done, `npm run build` writes the production build to
 `internal/web/dist/`; rebuild the Go binary to embed it. Commit both.
 
+## Passwords
+
+- **The password** is what everyone logs in with. It can be changed in
+  **Settings** (the current password is needed; other devices are signed
+  out). Only a PBKDF2 hash is stored, in `auth.json`.
+- **The master password** is a recovery key built into the program. Logging
+  in with it only opens a "Set a new password" screen. It can't be changed
+  from the web interface or the app, only by rebuilding:
+
+  ```powershell
+  go run ./cmd/masterpw          # asks for it twice, writes internal/auth/keys/master.hash
+  go build -o bin/adblocker.exe ./cmd/adblocker
+  ```
+
+  `master.hash` holds only a hash and is git-ignored, so it is never
+  committed: keep your own backup of the master password. Every copy of that
+  build accepts the same master password, so use a long random passphrase
+  (at least 16 characters). Without `master.hash` there is no master
+  password.
+- **Never commit secrets.** `admin-password.txt`, `auth.json`, `master.hash`
+  and `.env` files are git-ignored. For a second check, install the
+  pre-commit hook once: `cp scripts/pre-commit .git/hooks/pre-commit`. It
+  stops commits that contain those files, a password hash, or the current
+  password.
+
 ### API
 
-The web app uses a JSON API, which the planned mobile app will use too.
+The web app and the mobile app use a JSON API.
 `POST /api/login` with `{"password": "..."}` returns `{"token": "..."}` and
 sets a session cookie; send either the cookie or `Authorization: Bearer
-<token>` on the other calls.
+<token>` on the other calls. With the master password it returns
+`{"reset": true, "resetToken": "..."}` instead and no session.
 
 | Method | Path | Body / query | Result |
 |--------|------|--------------|--------|
+| `POST` | `/api/password` | `{"current": "...", "password": "..."}` | change the password; other sessions end |
+| `POST` | `/api/password/reset` | `{"resetToken": "...", "password": "..."}` | after a master login, no session needed; all sessions end |
 | `GET` | `/api/status` | | `enabled`, `totalQueries`, `blockedQueries`, `blocklistSize`, `customCount`, `allowCount` |
 | `POST` | `/api/enabled` | `{"enabled": false}` | switches blocking on/off |
 | `GET` | `/api/queries` | `?blocked=true&limit=100` | recent queries, newest first |

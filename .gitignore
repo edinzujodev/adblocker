@@ -25,3 +25,11 @@ admin-password.txt
 custom-blocklist.txt
 allowlist.txt
 groups.json
+auth.json
+
+# Secrets: never commit these
+/internal/auth/keys/master.hash
+.env
+.env.*
+*.pem
+*.key

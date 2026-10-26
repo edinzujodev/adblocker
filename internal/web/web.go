@@ -2,14 +2,14 @@
 // JSON API under /api/ and the static web app that uses it.
 //
 // Clients authenticate with POST /api/login. The browser gets an HttpOnly
-// session cookie; other clients (a future mobile app) can send the returned
-// token as "Authorization: Bearer <token>" instead.
+// session cookie; other clients (the mobile app) send the returned token as
+// "Authorization: Bearer <token>" instead. Logging in with the master
+// password instead returns a short-lived reset token that can only set a new
+// password (POST /api/password/reset).
 package web
 
 import (
 	"crypto/rand"
-	"crypto/sha256"
-	"crypto/subtle"
 	"embed"
 	"encoding/hex"
 	"encoding/json"
@@ -23,6 +23,7 @@ import (
 	"sync"
 	"time"
 
+	"adblocker/internal/auth"
 	"adblocker/internal/filter"
 	"adblocker/internal/groups"
 	"adblocker/internal/querylog"
@@ -38,6 +39,7 @@ const (
 	cookieName     = "adblocker_session"
 	sessionTTL     = 30 * 24 * time.Hour
 	failedLoginLag = time.Second // slows password guessing to ~1 try/second
+	resetTTL       = 10 * time.Minute
 )
 
 // Server is the web interface. Create it with New.
@@ -47,24 +49,29 @@ type Server struct {
 	queries *querylog.Log
 	sysDNS  *sysdns.Controller // may be nil
 	logger  *log.Logger
-	pwHash  [32]byte
+	auth    *auth.Store
+	master  func(password string) bool // auth.CheckMaster; replaced in tests
 
-	loginMu  sync.Mutex // serializes login attempts
+	loginMu  sync.Mutex // serializes login and password checks
 	mu       sync.Mutex
 	sessions map[string]time.Time // token -> expiry
+	resets   map[string]time.Time // master-password reset token -> expiry
 }
 
-// New returns a Server that accepts password. sysDNS may be nil, which hides
-// the "protect this computer" switch.
-func New(f *filter.Filter, g *groups.Manager, queries *querylog.Log, sysDNS *sysdns.Controller, password string, logger *log.Logger) *Server {
+// New returns a Server that checks logins against store and the built-in
+// master password. sysDNS may be nil, which hides the "protect this computer"
+// switch.
+func New(f *filter.Filter, g *groups.Manager, queries *querylog.Log, sysDNS *sysdns.Controller, store *auth.Store, logger *log.Logger) *Server {
 	return &Server{
 		filter:   f,
 		groups:   g,
 		queries:  queries,
 		sysDNS:   sysDNS,
 		logger:   logger,
-		pwHash:   sha256.Sum256([]byte(password)),
+		auth:     store,
+		master:   auth.CheckMaster,
 		sessions: make(map[string]time.Time),
+		resets:   make(map[string]time.Time),
 	}
 }
 
@@ -73,9 +80,11 @@ func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /api/login", s.login)
 	mux.HandleFunc("POST /api/logout", s.logout)
+	mux.HandleFunc("POST /api/password/reset", s.resetPassword)
 
 	api := http.NewServeMux()
 	api.HandleFunc("GET /api/status", s.status)
+	api.HandleFunc("POST /api/password", s.changePassword)
 	api.HandleFunc("POST /api/enabled", s.setEnabled)
 	api.HandleFunc("GET /api/queries", s.recentQueries)
 	api.HandleFunc("GET /api/top-blocked", s.topBlocked)
@@ -137,13 +146,25 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.loginMu.Lock()
-	h := sha256.Sum256([]byte(req.Password))
-	ok := subtle.ConstantTimeCompare(h[:], s.pwHash[:]) == 1
-	if !ok {
+	ok := s.auth.Check(req.Password)
+	master := !ok && s.master(req.Password)
+	if !ok && !master {
 		time.Sleep(failedLoginLag)
 	}
 	s.loginMu.Unlock()
-	if !ok {
+
+	switch {
+	case master:
+		// The master password only lets someone choose a new password.
+		token := newToken()
+		s.mu.Lock()
+		dropExpired(s.resets)
+		s.resets[token] = time.Now().Add(resetTTL)
+		s.mu.Unlock()
+		s.logger.Printf("web: master password used from %s to reset the password", r.RemoteAddr)
+		writeJSON(w, map[string]any{"reset": true, "resetToken": token})
+		return
+	case !ok:
 		s.logger.Printf("web: failed login from %s", r.RemoteAddr)
 		writeError(w, http.StatusUnauthorized, "wrong password")
 		return
@@ -152,11 +173,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	token := newToken()
 	expires := time.Now().Add(sessionTTL)
 	s.mu.Lock()
-	for t, exp := range s.sessions {
-		if time.Now().After(exp) {
-			delete(s.sessions, t)
-		}
-	}
+	dropExpired(s.sessions)
 	s.sessions[token] = expires
 	s.mu.Unlock()
 
@@ -179,6 +196,91 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	http.SetCookie(w, &http.Cookie{Name: cookieName, Value: "", Path: "/", MaxAge: -1})
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// resetPassword sets a new password with a token from a master-password
+// login, then signs out every device.
+func (s *Server) resetPassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		ResetToken string `json:"resetToken"`
+		Password   string `json:"password"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	s.mu.Lock()
+	exp, ok := s.resets[req.ResetToken]
+	s.mu.Unlock()
+	if req.ResetToken == "" || !ok || time.Now().After(exp) {
+		writeError(w, http.StatusUnauthorized, "this reset has expired; log in with the master password again")
+		return
+	}
+	if !s.setPassword(w, req.Password, "") {
+		return
+	}
+	s.mu.Lock()
+	delete(s.resets, req.ResetToken)
+	s.mu.Unlock()
+	s.logger.Printf("web: password reset with the master password from %s", r.RemoteAddr)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// changePassword lets a logged-in user change the password. It needs the
+// current one, so an unlocked phone left lying around can't change it, and
+// signs out every other device.
+func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Current  string `json:"current"`
+		Password string `json:"password"`
+	}
+	if !readJSON(w, r, &req) {
+		return
+	}
+	s.loginMu.Lock()
+	ok := s.auth.Check(req.Current)
+	if !ok {
+		time.Sleep(failedLoginLag)
+	}
+	s.loginMu.Unlock()
+	if !ok {
+		writeError(w, http.StatusForbidden, "your current password is wrong")
+		return
+	}
+	if !s.setPassword(w, req.Password, requestToken(r)) {
+		return
+	}
+	s.logger.Printf("web: password changed from %s", r.RemoteAddr)
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// setPassword stores password and ends every session except keep. It writes
+// the error response and returns false on failure.
+func (s *Server) setPassword(w http.ResponseWriter, password, keep string) bool {
+	if err := s.auth.Set(password); err != nil {
+		if errors.Is(err, auth.ErrTooShort) {
+			writeError(w, http.StatusBadRequest, "the new password is too short: "+err.Error())
+		} else {
+			writeError(w, http.StatusInternalServerError, "could not save the password: "+err.Error())
+		}
+		return false
+	}
+	s.mu.Lock()
+	for t := range s.sessions {
+		if t != keep {
+			delete(s.sessions, t)
+		}
+	}
+	s.mu.Unlock()
+	return true
+}
+
+func dropExpired(tokens map[string]time.Time) {
+	now := time.Now()
+	for t, exp := range tokens {
+		if now.After(exp) {
+			delete(tokens, t)
+		}
+	}
 }
 
 func (s *Server) requireAuth(next http.Handler) http.Handler {

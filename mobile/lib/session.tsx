@@ -14,8 +14,14 @@ type State =
 
 interface Session {
   state: State;
-  /** Connects to server (e.g. "192.168.0.197:8080") and logs in. Throws on failure. */
-  signIn: (server: string, password: string) => Promise<void>;
+  /**
+   * Connects to server (e.g. "192.168.0.197:8080") and logs in. Throws on
+   * failure. With the master password it returns a reset token instead of
+   * signing in: pass it to resetPassword.
+   */
+  signIn: (server: string, password: string) => Promise<{ resetToken: string } | undefined>;
+  /** Sets a new password after a master-password login. */
+  resetPassword: (server: string, resetToken: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   /** Call when a request fails: signs out on AuthError, otherwise shows a toast. */
   onError: (err: unknown) => void;
@@ -45,10 +51,17 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const signIn = React.useCallback(async (input: string, password: string) => {
     const server = normalizeServer(input);
     const api = createClient({ baseUrl: server });
-    const token = await withTimeout(api.login(password), 8000, unreachable(server));
+    // Generous timeout: checking a password takes a few seconds on a Raspberry Pi.
+    const r = await withTimeout(api.login(password), 15000, unreachable(server));
     await storage.setItemAsync(SERVER_KEY, server);
-    await storage.setItemAsync(TOKEN_KEY, token);
+    if (r.reset && r.resetToken) return { resetToken: r.resetToken };
+    await storage.setItemAsync(TOKEN_KEY, r.token!);
     setState({ status: 'signedIn', server, api });
+  }, []);
+
+  const resetPassword = React.useCallback(async (input: string, resetToken: string, password: string) => {
+    const server = normalizeServer(input);
+    await withTimeout(createClient({ baseUrl: server }).resetPassword(resetToken, password), 15000, unreachable(server));
   }, []);
 
   const signOut = React.useCallback(async () => {
@@ -70,7 +83,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [toast]
   );
 
-  const value = React.useMemo(() => ({ state, signIn, signOut, onError }), [state, signIn, signOut, onError]);
+  const value = React.useMemo(
+    () => ({ state, signIn, resetPassword, signOut, onError }),
+    [state, signIn, resetPassword, signOut, onError]
+  );
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
 }
 

@@ -1,6 +1,16 @@
 // Types for the EasioProtect JSON API (see internal/web/web.go). Kept free of
 // browser APIs so the React Native app can share them.
 
+/** POST /api/login: a session, or (master password) a token to set a new password. */
+export interface LoginResult {
+  token?: string
+  reset?: boolean
+  resetToken?: string
+}
+
+/** Shortest password the server accepts. */
+export const MIN_PASSWORD_LENGTH = 8
+
 export interface Status {
   enabled: boolean
   totalQueries: number

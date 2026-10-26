@@ -5,6 +5,7 @@ import {
   LayersIcon,
   ListChecksIcon,
   LogOutIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   ShieldOffIcon,
   type LucideIcon,
@@ -17,16 +18,18 @@ import { GroupsTab } from "@/components/GroupsTab"
 import { HomeTab } from "@/components/HomeTab"
 import { ListsTab } from "@/components/ListsTab"
 import { Logo } from "@/components/Logo"
+import { SettingsTab } from "@/components/SettingsTab"
 import { Button } from "@/components/ui/button"
 import { useApi, usePolled } from "@/lib/api-hooks"
 
-export type Tab = "home" | "activity" | "groups" | "lists"
+export type Tab = "home" | "activity" | "groups" | "lists" | "settings"
 
 const tabs: { id: Tab; label: string; icon: LucideIcon }[] = [
   { id: "home", label: "Home", icon: HouseIcon },
   { id: "groups", label: "Groups", icon: LayersIcon },
   { id: "activity", label: "Activity", icon: ActivityIcon },
   { id: "lists", label: "My lists", icon: ListChecksIcon },
+  { id: "settings", label: "Settings", icon: SettingsIcon },
 ]
 
 function tabFromHash(): Tab {
@@ -88,6 +91,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
         {tab === "groups" && <GroupsTab />}
         {tab === "activity" && <ActivityTab />}
         {tab === "lists" && <ListsTab />}
+        {tab === "settings" && <SettingsTab />}
         <p className="text-center text-sm text-muted-foreground">
           Changes apply right away. Devices can take a few minutes to notice.
         </p>

@@ -13,6 +13,7 @@ import {
   LayersIcon,
   ListChecksIcon,
   LogOutIcon,
+  SettingsIcon,
   ShieldCheckIcon,
   ShieldOffIcon,
   type LucideIcon,
@@ -93,6 +94,10 @@ function TabsNavigator() {
       <Tabs.Screen
         name="lists"
         options={{ title: 'My lists', tabBarIcon: tabIcon(ListChecksIcon) }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{ title: 'Settings', tabBarIcon: tabIcon(SettingsIcon) }}
       />
     </Tabs>
   );
