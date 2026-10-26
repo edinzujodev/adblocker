@@ -1,5 +1,5 @@
 import { AuthError, createClient, type Client } from '@easioprotect/api';
-import * as SecureStore from 'expo-secure-store';
+import { storage } from '@/lib/storage';
 import * as React from 'react';
 
 import { useToast } from '@/lib/toast';
@@ -31,8 +31,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     (async () => {
       const [server, token] = await Promise.all([
-        SecureStore.getItemAsync(SERVER_KEY),
-        SecureStore.getItemAsync(TOKEN_KEY),
+        storage.getItemAsync(SERVER_KEY),
+        storage.getItemAsync(TOKEN_KEY),
       ]);
       if (server && token) {
         setState({ status: 'signedIn', server, api: createClient({ baseUrl: server, token }) });
@@ -46,21 +46,21 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     const server = normalizeServer(input);
     const api = createClient({ baseUrl: server });
     const token = await withTimeout(api.login(password), 8000, unreachable(server));
-    await SecureStore.setItemAsync(SERVER_KEY, server);
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await storage.setItemAsync(SERVER_KEY, server);
+    await storage.setItemAsync(TOKEN_KEY, token);
     setState({ status: 'signedIn', server, api });
   }, []);
 
   const signOut = React.useCallback(async () => {
     if (state.status === 'signedIn') state.api.logout().catch(() => {});
-    await SecureStore.deleteItemAsync(TOKEN_KEY);
+    await storage.deleteItemAsync(TOKEN_KEY);
     setState({ status: 'signedOut', server: state.status === 'loading' ? '' : state.server });
   }, [state]);
 
   const onError = React.useCallback(
     (err: unknown) => {
       if (err instanceof AuthError) {
-        SecureStore.deleteItemAsync(TOKEN_KEY);
+        storage.deleteItemAsync(TOKEN_KEY);
         setState((s) => ({ status: 'signedOut', server: s.status === 'loading' ? '' : s.server }));
         toast.show('Your session ended. Please log in again.', 'error');
         return;
