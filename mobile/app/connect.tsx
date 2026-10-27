@@ -29,7 +29,7 @@ export default function ConnectScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         className="flex-1">
         <ScrollView
-          contentContainerClassName="flex-grow justify-center gap-6 p-4"
+          contentContainerClassName="w-full max-w-md flex-grow justify-center gap-6 self-center p-4"
           keyboardShouldPersistTaps="handled">
           <View className="items-center gap-3">
             <Logo size={64} />

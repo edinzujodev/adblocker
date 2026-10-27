@@ -22,7 +22,8 @@ export function Screen({
   return (
     <ScrollView
       className="flex-1 bg-background"
-      contentContainerClassName="gap-5 px-4 pb-10 pt-5"
+      // Phone-width column, centered on tablets and in a browser.
+      contentContainerClassName="w-full max-w-xl self-center gap-5 px-4 pb-10 pt-5"
       keyboardShouldPersistTaps="handled"
       refreshControl={refresh && <RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
       {children}

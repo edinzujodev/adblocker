@@ -67,7 +67,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
   return (
     <div className="min-h-svh bg-background">
       <header className="sticky top-0 z-10 border-b bg-card/95 pt-[env(safe-area-inset-top)] backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-3xl items-center gap-3 px-4">
+        <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4">
           <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <Logo />
             <span className="max-[360px]:sr-only">EasioProtect</span>
@@ -81,12 +81,12 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
           </nav>
           <Button variant="ghost" onClick={logout} className="ml-auto text-muted-foreground md:ml-2">
             <LogOutIcon aria-hidden="true" />
-            <span className="max-sm:sr-only">Log out</span>
+            <span className="max-lg:sr-only">Log out</span>
           </Button>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-3xl gap-5 px-4 pt-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-10">
+      <main className="mx-auto grid max-w-2xl gap-5 px-4 pt-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-10">
         {tab === "home" && <HomeTab status={status} onStatusChange={reload} go={go} />}
         {tab === "groups" && <GroupsTab />}
         {tab === "activity" && <ActivityTab />}
@@ -101,7 +101,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
         aria-label="Sections"
         className="fixed inset-x-0 bottom-0 z-10 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <div className="mx-auto flex max-w-3xl">
+        <div className="mx-auto flex max-w-2xl">
           {tabs.map((t) => (
             <TabLink key={t.id} tab={t} active={tab === t.id} layout="column" />
           ))}
