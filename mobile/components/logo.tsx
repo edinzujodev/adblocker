@@ -2,7 +2,7 @@ import { THEME } from '@/lib/theme';
 import { useColorScheme } from 'nativewind';
 import Svg, { Path } from 'react-native-svg';
 
-/** EasioProtect shield. */
+/** JoK shield. */
 export function Logo({ size = 28 }: { size?: number }) {
   const { colorScheme } = useColorScheme();
   const theme = THEME[colorScheme ?? 'light'];

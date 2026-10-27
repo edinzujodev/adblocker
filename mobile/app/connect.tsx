@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { errorMessage, useSession } from '@/lib/session';
-import { MIN_PASSWORD_LENGTH } from '@easioprotect/api';
+import { MIN_PASSWORD_LENGTH } from '@jok/api';
 import { CircleCheckIcon, KeyRoundIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
@@ -35,10 +35,10 @@ export default function ConnectScreen() {
             <Logo size={64} />
             <View className="gap-1">
               <Text role="heading" aria-level={1} className="text-center text-2xl font-bold">
-                EasioProtect
+                JoK
               </Text>
               <Text className="text-center text-muted-foreground">
-                Keep ads and unwanted websites away from your whole home
+                Say no to ads and unwanted sites.
               </Text>
             </View>
           </View>
@@ -63,7 +63,7 @@ export default function ConnectScreen() {
 
           <Text className="text-center text-sm text-muted-foreground">
             Your phone needs to be on your home Wi-Fi, the same one as the computer running
-            EasioProtect.
+            JoK.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -126,7 +126,7 @@ function LoginCard({
             returnKeyType="next"
           />
           <Text className="text-sm text-muted-foreground">
-            The “on your phone” address from the EasioProtect window. It ends in :8080.
+            The “on your phone” address from the JoK window. It ends in :8080.
           </Text>
         </View>
         <View className="gap-2">

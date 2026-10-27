@@ -1,10 +1,10 @@
 // Command masterpw sets the master password: the recovery password that is
-// built into EasioProtect and can't be changed from the web interface.
+// built into JoK and can't be changed from the web interface.
 //
 //	go run ./cmd/masterpw
 //
 // It asks for the password twice (hidden) and writes its hash to
-// internal/auth/keys/master.hash (git-ignored). Rebuild EasioProtect
+// internal/auth/keys/master.hash (git-ignored). Rebuild JoK
 // afterwards to use it.
 package main
 
@@ -44,7 +44,7 @@ func main() {
 		fail(err.Error())
 	}
 	fmt.Printf("Saved the master password's hash to %s.\n", target)
-	fmt.Println("Rebuild EasioProtect to use it:  go build -o bin/adblocker.exe ./cmd/adblocker")
+	fmt.Println("Rebuild JoK to use it:  go build -o bin/adblocker.exe ./cmd/adblocker")
 	fmt.Println("Keep the password itself somewhere safe; it can't be recovered from the hash.")
 }
 

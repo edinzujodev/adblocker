@@ -1,4 +1,4 @@
-import type { Client } from '@easioprotect/api';
+import type { Client } from '@jok/api';
 import { useFocusEffect } from 'expo-router';
 import * as React from 'react';
 import { AppState } from 'react-native';

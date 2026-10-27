@@ -7,7 +7,7 @@ import { formatNumber, timeAgo } from '@/lib/format';
 import { useApi } from '@/lib/session';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
-import type { Query } from '@easioprotect/api';
+import type { Query } from '@jok/api';
 import * as React from 'react';
 import { View } from 'react-native';
 
@@ -33,7 +33,7 @@ export default function ActivityScreen() {
     <Screen onRefresh={() => Promise.all([recent.reload(), top.reload()])}>
       <PageHeader
         title="Activity"
-        description="Everything EasioProtect stopped in your home. Updates by itself."
+        description="Everything JoK stopped in your home. Updates by itself."
       />
 
       <Card>
@@ -75,7 +75,7 @@ export default function ActivityScreen() {
       <Card>
         <CardHeader>
           <CardTitle>Blocked most often</CardTitle>
-          <CardDescription>Since EasioProtect started.</CardDescription>
+          <CardDescription>Since JoK started.</CardDescription>
         </CardHeader>
         <CardContent className="gap-3">
           {!top.data ? (

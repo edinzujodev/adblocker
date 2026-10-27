@@ -13,7 +13,7 @@ import (
 
 var (
 	ErrUnsupported = errors.New("not supported on this computer")
-	ErrNotAdmin    = errors.New("EasioProtect must run as administrator to change this computer's DNS settings")
+	ErrNotAdmin    = errors.New("JoK must run as administrator to change this computer's DNS settings")
 )
 
 // Status describes whether this computer uses the adblocker for DNS.
@@ -53,11 +53,11 @@ type system interface {
 	clearSaved(server string) (int, error)
 }
 
-// Controller switches this computer's DNS between EasioProtect and the
+// Controller switches this computer's DNS between JoK and the
 // network's normal (DHCP) servers.
 //
-// It always fails open: EasioProtect is set as the first DNS server and the
-// network's own servers stay behind it as backups. If EasioProtect is not
+// It always fails open: JoK is set as the first DNS server and the
+// network's own servers stay behind it as backups. If JoK is not
 // running (crashed, killed, laptop moved to another Wi-Fi), Windows gets no
 // answer from it and immediately asks the backup, so the internet keeps
 // working; only blocking stops.
@@ -125,7 +125,7 @@ func (c *Controller) Status() (Status, error) {
 	case len(st.Adapters) == 0:
 		st.Message = "No connected network adapter found."
 	case !st.Admin:
-		st.Message = "Start EasioProtect as administrator to switch this from here."
+		st.Message = "Start JoK as administrator to switch this from here."
 	}
 	return st, nil
 }
@@ -163,7 +163,7 @@ func (c *Controller) Set(on bool) error {
 	return c.sys.apply(changes)
 }
 
-// Restore is called on shutdown: once EasioProtect stops, any network
+// Restore is called on shutdown: once JoK stops, any network
 // setting still pointing at it would leave the computer without working DNS,
 // including settings saved for Wi-Fi networks it is not connected to now. It
 // reports whether anything was changed. Without admin rights it does nothing.
@@ -189,7 +189,7 @@ func (c *Controller) Restore() (bool, error) {
 	return true, c.Set(false)
 }
 
-// withBackups puts EasioProtect first and keeps the adapter's current servers
+// withBackups puts JoK first and keeps the adapter's current servers
 // behind it as backups. There is always at least one backup.
 func (c *Controller) withBackups(current []string) []string {
 	servers := []string{c.server}

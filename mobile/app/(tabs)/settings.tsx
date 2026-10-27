@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Text } from '@/components/ui/text';
 import { errorMessage, useApi, useSession } from '@/lib/session';
 import { useToast } from '@/lib/toast';
-import { MIN_PASSWORD_LENGTH } from '@easioprotect/api';
+import { MIN_PASSWORD_LENGTH } from '@jok/api';
 import { KeyRoundIcon, LifeBuoyIcon, LogOutIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { ActivityIndicator, View } from 'react-native';

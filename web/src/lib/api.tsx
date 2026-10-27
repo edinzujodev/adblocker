@@ -1,7 +1,7 @@
 import { useCallback, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import { AuthError, createClient } from "@easioprotect/api"
+import { AuthError, createClient } from "@jok/api"
 import { ApiContext } from "@/lib/api-hooks"
 import { errorMessage } from "@/lib/format"
 

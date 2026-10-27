@@ -1,6 +1,6 @@
 import { toast } from "sonner"
 
-import type { Query } from "@easioprotect/api"
+import type { Query } from "@jok/api"
 import { Button } from "@/components/ui/button"
 import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -28,7 +28,7 @@ export function ActivityTab() {
     <>
       <div className="grid gap-1">
         <h1 className="text-2xl font-bold tracking-tight">Activity</h1>
-        <p className="text-muted-foreground">Everything EasioProtect stopped in your home. Updates by itself.</p>
+        <p className="text-muted-foreground">Everything JoK stopped in your home. Updates by itself.</p>
       </div>
 
       <Card>
@@ -65,7 +65,7 @@ export function ActivityTab() {
       <Card>
         <CardHeader>
           <CardTitle>Blocked most often</CardTitle>
-          <CardDescription>Since EasioProtect started.</CardDescription>
+          <CardDescription>Since JoK started.</CardDescription>
         </CardHeader>
         <CardContent>
           {!top ? (

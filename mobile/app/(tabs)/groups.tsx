@@ -14,7 +14,7 @@ import { useApi } from '@/lib/session';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
 import { cn } from '@/lib/utils';
-import type { BlockGroup } from '@easioprotect/api';
+import type { BlockGroup } from '@jok/api';
 import {
   ChevronDownIcon,
   DicesIcon,

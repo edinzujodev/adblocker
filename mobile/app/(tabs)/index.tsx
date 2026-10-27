@@ -16,7 +16,7 @@ import { THEME } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
 import { cn } from '@/lib/utils';
-import type { CheckResult, Status, ThisComputer } from '@easioprotect/api';
+import type { CheckResult, Status, ThisComputer } from '@jok/api';
 import { router } from 'expo-router';
 import {
   ChevronRightIcon,
@@ -105,7 +105,7 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
         </Text>
         <Text className="text-center text-muted-foreground">
           {on
-            ? 'Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses EasioProtect.'
+            ? 'Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses JoK.'
             : "Nothing is blocked right now, not even the sites you chose. Turn protection back on when you're ready."}
         </Text>
       </View>
@@ -133,7 +133,7 @@ function Stats({ status }: { status?: Status }) {
     },
   ];
   return (
-    <View className="flex-row gap-3" aria-label="Since EasioProtect started">
+    <View className="flex-row gap-3" aria-label="Since JoK started">
       {(items || [null, null, null]).map((item, i) =>
         item ? (
           <Card key={item.label} className="flex-1 gap-1 px-3 py-3">
@@ -345,7 +345,7 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
   );
 }
 
-/** Points the DNS of the computer running EasioProtect at it (Windows only). */
+/** Points the DNS of the computer running JoK at it (Windows only). */
 function ThisComputerCard({
   data: pc,
   onChange,
@@ -387,18 +387,18 @@ function ThisComputerCard({
           disabled={disabled}
           role="switch"
           aria-checked={pc.enabled}
-          aria-label={`Protect the computer running EasioProtect, ${pc.computer}`}
+          aria-label={`Protect the computer running JoK, ${pc.computer}`}
           className="flex-row items-center gap-4">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Icon as={MonitorIcon} size={22} className="text-muted-foreground" />
           </View>
           <View className="flex-1 gap-0.5">
             <Text className="font-semibold">
-              Protect the computer running EasioProtect ({pc.computer})
+              Protect the computer running JoK ({pc.computer})
             </Text>
             <Text className="text-sm text-muted-foreground">
               {pc.enabled
-                ? 'On. If EasioProtect ever stops, this computer keeps working normally.'
+                ? 'On. If JoK ever stops, this computer keeps working normally.'
                 : "Off. That computer isn't protected yet."}
             </Text>
           </View>

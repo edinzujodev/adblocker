@@ -69,7 +69,7 @@ function TabsNavigator() {
         headerTitle: () => (
           <View className="flex-row items-center gap-2">
             <Logo />
-            <Text className="text-lg font-bold">EasioProtect</Text>
+            <Text className="text-lg font-bold">JoK</Text>
             <StatusPill />
           </View>
         ),

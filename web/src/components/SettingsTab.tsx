@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react"
 import { KeyRoundIcon, Loader2Icon, LifeBuoyIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { MIN_PASSWORD_LENGTH } from "@easioprotect/api"
+import { MIN_PASSWORD_LENGTH } from "@jok/api"
 import { PasswordInput } from "@/components/PasswordInput"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

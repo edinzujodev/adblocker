@@ -1,4 +1,4 @@
-// EasioProtect API client. It only uses fetch, so it works in the browser
+// JoK API client. It only uses fetch, so it works in the browser
 // (session cookie) and in React Native (bearer token from login()).
 
 import type { BlockGroup, Bundle, CheckResult, LoginResult, DomainCount, ListName, Query, Status, ThisComputer } from "./types"

@@ -1,11 +1,11 @@
-import { AuthError, createClient, type Client } from '@easioprotect/api';
+import { AuthError, createClient, type Client } from '@jok/api';
 import { storage } from '@/lib/storage';
 import * as React from 'react';
 
 import { useToast } from '@/lib/toast';
 
-const SERVER_KEY = 'easioprotect.server';
-const TOKEN_KEY = 'easioprotect.token';
+const SERVER_KEY = 'jok.server';
+const TOKEN_KEY = 'jok.token';
 
 type State =
   | { status: 'loading' }
@@ -113,12 +113,12 @@ export function normalizeServer(input: string): string {
 }
 
 export function errorMessage(err: unknown): string {
-  if (err instanceof TypeError) return 'Could not reach EasioProtect. Check the address and that you are on the same Wi-Fi.';
+  if (err instanceof TypeError) return 'Could not reach JoK. Check the address and that you are on the same Wi-Fi.';
   return err instanceof Error ? err.message : 'Something went wrong';
 }
 
 function unreachable(server: string) {
-  return new Error(`No answer from ${server}. Is EasioProtect running, and is this phone on the same Wi-Fi?`);
+  return new Error(`No answer from ${server}. Is JoK running, and is this phone on the same Wi-Fi?`);
 }
 
 function withTimeout<T>(p: Promise<T>, ms: number, err: Error): Promise<T> {

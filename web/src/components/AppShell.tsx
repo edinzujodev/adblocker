@@ -12,7 +12,7 @@ import {
 } from "lucide-react"
 import { cn } from "cn"
 
-import type { Status } from "@easioprotect/api"
+import type { Status } from "@jok/api"
 import { ActivityTab } from "@/components/ActivityTab"
 import { GroupsTab } from "@/components/GroupsTab"
 import { HomeTab } from "@/components/HomeTab"
@@ -70,7 +70,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4">
           <a href="#home" className="flex items-center gap-2 text-lg font-bold tracking-tight">
             <Logo />
-            <span className="max-[360px]:sr-only">EasioProtect</span>
+            <span className="max-[360px]:sr-only">JoK</span>
           </a>
           <StatusPill status={status} />
 

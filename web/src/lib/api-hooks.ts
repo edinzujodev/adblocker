@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react"
 
-import type { Client } from "@easioprotect/api"
+import type { Client } from "@jok/api"
 
 export interface ApiContextValue {
   api: Client

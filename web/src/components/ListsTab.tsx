@@ -2,7 +2,7 @@ import { useId, useState, type FormEvent } from "react"
 import { BanIcon, CircleCheckIcon, PlusIcon, XIcon, type LucideIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import type { ListName } from "@easioprotect/api"
+import type { ListName } from "@jok/api"
 import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

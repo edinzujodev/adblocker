@@ -114,7 +114,7 @@ func TestRestoreClearsOtherNetworks(t *testing.T) {
 		t.Errorf("Restore = %v, %v; want true, nil", changed, err)
 	}
 	if _, ok := f.saved["Barcelona"]; ok {
-		t.Error("saved setting for Barcelona still points at EasioProtect")
+		t.Error("saved setting for Barcelona still points at JoK")
 	}
 	if f.saved["Office"] != "10.0.0.1" {
 		t.Error("unrelated saved setting was changed")

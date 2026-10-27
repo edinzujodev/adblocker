@@ -4,7 +4,7 @@
     "strict": true,
     "paths": {
       "@/*": ["./*"],
-      "@easioprotect/api": ["../packages/api/src"]
+      "@jok/api": ["../packages/api/src"]
     }
   },
   "include": ["../packages/api/src/**/*.ts", "**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts", "nativewind-env.d.ts"]

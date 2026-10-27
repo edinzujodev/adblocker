@@ -1,4 +1,4 @@
-// Types for the EasioProtect JSON API (see internal/web/web.go). Kept free of
+// Types for the JoK JSON API (see internal/web/web.go). Kept free of
 // browser APIs so the React Native app can share them.
 
 /** POST /api/login: a session, or (master password) a token to set a new password. */

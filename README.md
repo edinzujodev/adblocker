@@ -1,11 +1,14 @@
-# EasioProtect
+# JoK
 
-> **Not open source.** EasioProtect is proprietary software, © 2026 Edin
+> **Not open source.** JoK is proprietary software, © 2026 Edin
 > Zujo. All rights reserved. The code is public for viewing only: you may
 > not copy, modify, reuse, distribute or build on it, in whole or in part,
 > without written permission. See [LICENSE](LICENSE).
 
-EasioProtect is a home ad blocker in the style of Pi-hole: a small DNS server that answers
+"Jok" means "no" in Bosnian, and that is the job: JoK says no to ads,
+trackers and the sites you choose, for every device in your home.
+
+JoK is a home ad blocker in the style of Pi-hole: a small DNS server that answers
 ad/tracker domains with `0.0.0.0` / `::` and forwards everything else to an
 upstream resolver. It is a single Go binary, built to run on a Windows PC for
 development and on a Raspberry Pi 3 Model B+ (linux/arm64) later.
@@ -104,19 +107,19 @@ four tabs:
   wins over them.
 
 **Protect this computer** (Windows only) points the DNS of every connected
-network adapter at EasioProtect, or back to automatic. Windows only allows
+network adapter at JoK, or back to automatic. Windows only allows
 this for programs started **as administrator** (right-click PowerShell, *Run
-as administrator*, then start EasioProtect there); otherwise the switch is
+as administrator*, then start JoK there); otherwise the switch is
 greyed out.
 
 It never cuts the computer off the internet:
 
 - **Backup DNS.** The network's own DNS server (usually the router) stays
-  configured behind EasioProtect. If EasioProtect is not running for any
+  configured behind JoK. If JoK is not running for any
   reason (crash, killed in Task Manager, laptop on another Wi-Fi), Windows
   gets no answer from it and immediately uses the backup. Ads get through,
   but pages load.
-- **Cleanup.** Switching protection off, or stopping EasioProtect (Ctrl+C or
+- **Cleanup.** Switching protection off, or stopping JoK (Ctrl+C or
   closing its window), puts DNS back to automatic, including the settings
   Windows saved for Wi-Fi networks the computer is not connected to now.
 

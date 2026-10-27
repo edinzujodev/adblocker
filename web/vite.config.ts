@@ -11,7 +11,7 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       // Shared with the mobile app.
-      '@easioprotect/api': path.resolve(__dirname, '../packages/api/src'),
+      '@jok/api': path.resolve(__dirname, '../packages/api/src'),
     },
   },
   build: {

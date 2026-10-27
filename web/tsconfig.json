@@ -1,7 +1,7 @@
 {
   "files": [],
   "compilerOptions": {
-    "paths": { "@/*": ["./src/*"], "@easioprotect/api": ["../packages/api/src"] }
+    "paths": { "@/*": ["./src/*"], "@jok/api": ["../packages/api/src"] }
   },
   "references": [
     { "path": "./tsconfig.app.json" },

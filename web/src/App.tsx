@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 
-import { AuthError } from "@easioprotect/api"
+import { AuthError } from "@jok/api"
 import { AppShell } from "@/components/AppShell"
 import { LoginScreen } from "@/components/LoginScreen"
 import { Toaster } from "@/components/ui/sonner"

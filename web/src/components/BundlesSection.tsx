@@ -3,7 +3,7 @@ import { CheckIcon, Loader2Icon, PackageIcon, PencilIcon, PlusIcon, Trash2Icon }
 import { toast } from "sonner"
 import { cn } from "cn"
 
-import type { BlockGroup, Bundle } from "@easioprotect/api"
+import type { BlockGroup, Bundle } from "@jok/api"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

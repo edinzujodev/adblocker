@@ -10,7 +10,7 @@ import { Text } from '@/components/ui/text';
 import { useApi } from '@/lib/session';
 import { useToast } from '@/lib/toast';
 import { cn } from '@/lib/utils';
-import type { BlockGroup, Bundle } from '@easioprotect/api';
+import type { BlockGroup, Bundle } from '@jok/api';
 import {
   CheckIcon,
   PackageIcon,

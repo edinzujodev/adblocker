@@ -13,7 +13,7 @@ import {
 import { toast } from "sonner"
 import { cn } from "cn"
 
-import type { CheckResult, Status } from "@easioprotect/api"
+import type { CheckResult, Status } from "@jok/api"
 import type { Tab } from "@/components/AppShell"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -94,7 +94,7 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
         </h1>
         <p className="mx-auto max-w-md text-muted-foreground">
           {on
-            ? "Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses EasioProtect."
+            ? "Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses JoK."
             : "Nothing is blocked right now, not even the sites you chose. Turn protection back on when you're ready."}
         </p>
       </div>
@@ -119,7 +119,7 @@ function Stats({ status }: { status?: Status }) {
     { label: "Of sites blocked", value: percent(status.blockedQueries, status.totalQueries), icon: PercentIcon },
   ]
   return (
-    <section aria-label="Since EasioProtect started" className="grid grid-cols-3 gap-3">
+    <section aria-label="Since JoK started" className="grid grid-cols-3 gap-3">
       {(items || [null, null, null]).map((item, i) =>
         item ? (
           <Card key={item.label} size="sm" className="gap-2">
@@ -322,7 +322,7 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
   )
 }
 
-/** Points the DNS of the computer running EasioProtect at it (Windows only). */
+/** Points the DNS of the computer running JoK at it (Windows only). */
 function ThisComputerCard() {
   const { api, onError } = useApi()
   // Reading the network settings starts PowerShell on the server: no polling.
@@ -359,7 +359,7 @@ function ThisComputerCard() {
             <span className="font-semibold">Protect this computer ({pc.computer})</span>
             <span className="text-sm text-muted-foreground">
               {pc.enabled
-                ? "On. If EasioProtect ever stops, this computer keeps working normally."
+                ? "On. If JoK ever stops, this computer keeps working normally."
                 : "Off. This computer isn't protected yet."}
             </span>
           </label>

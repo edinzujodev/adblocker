@@ -1,20 +1,20 @@
 {
   "expo": {
-    "name": "EasioProtect",
-    "slug": "easioprotect",
+    "name": "JoK",
+    "slug": "jok",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "easioprotect",
+    "scheme": "jok",
     "userInterfaceStyle": "automatic",
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.easioprotect.app",
+      "bundleIdentifier": "com.edinzujo.jok",
       "infoPlist": {
-        "NSLocalNetworkUsageDescription": "EasioProtect connects to the EasioProtect server on your home network.",
+        "NSLocalNetworkUsageDescription": "JoK connects to the JoK server on your home network.",
         "NSAppTransportSecurity": {
           "NSAllowsLocalNetworking": true
         }
@@ -25,7 +25,7 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#0f766e"
       },
-      "package": "com.easioprotect.app"
+      "package": "com.edinzujo.jok"
     },
     "web": {
       "bundler": "metro",

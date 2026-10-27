@@ -9,7 +9,7 @@ import { Text } from '@/components/ui/text';
 import { useApi } from '@/lib/session';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
-import type { ListName } from '@easioprotect/api';
+import type { ListName } from '@jok/api';
 import { BanIcon, CircleCheckIcon, PlusIcon, XIcon, type LucideIcon } from 'lucide-react-native';
 import * as React from 'react';
 import { View } from 'react-native';

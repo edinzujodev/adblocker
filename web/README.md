@@ -1,4 +1,4 @@
-# EasioProtect web interface
+# JoK web interface
 
 React + TypeScript + Vite + Tailwind CSS + shadcn/ui.
 

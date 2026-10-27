@@ -10,7 +10,7 @@ const apiSrc = path.resolve(__dirname, '../packages/api/src');
 config.watchFolders = [...(config.watchFolders ?? []), apiSrc];
 const defaultResolve = config.resolver.resolveRequest;
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName === '@easioprotect/api') {
+  if (moduleName === '@jok/api') {
     return { type: 'sourceFile', filePath: path.join(apiSrc, 'index.ts') };
   }
   return (defaultResolve ?? context.resolveRequest)(context, moduleName, platform);

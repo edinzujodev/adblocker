@@ -17,7 +17,7 @@
     "jsx": "react-jsx",
 
     /* Path alias */
-    "paths": { "@/*": ["./src/*"], "@easioprotect/api": ["../packages/api/src"] },
+    "paths": { "@/*": ["./src/*"], "@jok/api": ["../packages/api/src"] },
 
     /* Linting */
     "noUnusedLocals": true,

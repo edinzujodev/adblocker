@@ -1,6 +1,6 @@
 import { cn } from "cn"
 
-/** EasioProtect shield. */
+/** JoK shield. */
 export function Logo({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true" className={cn("size-7", className)}>

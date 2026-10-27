@@ -1,4 +1,4 @@
-import type { Status } from '@easioprotect/api';
+import type { Status } from '@jok/api';
 import * as React from 'react';
 
 import { usePolled } from '@/lib/use-polled';

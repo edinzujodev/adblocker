@@ -104,7 +104,7 @@ func main() {
 	upstreamHost, _, _ := net.SplitHostPort(*upstream)
 	thisPC := sysdns.New(*listen, upstreamHost)
 	if st, err := thisPC.Status(); err == nil && st.Supported && !st.Admin {
-		logger.Printf("note: start EasioProtect as administrator to switch this computer's DNS from the web interface")
+		logger.Printf("note: start JoK as administrator to switch this computer's DNS from the web interface")
 	}
 
 	if *webAddr != "" {

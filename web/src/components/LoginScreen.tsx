@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react"
 import { CircleCheckIcon, KeyRoundIcon, Loader2Icon } from "lucide-react"
 
-import { MIN_PASSWORD_LENGTH } from "@easioprotect/api"
+import { MIN_PASSWORD_LENGTH } from "@jok/api"
 import { Logo } from "@/components/Logo"
 import { PasswordInput } from "@/components/PasswordInput"
 import { Button } from "@/components/ui/button"
@@ -21,8 +21,8 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
         <div className="grid justify-items-center gap-3 text-center">
           <Logo className="size-16" />
           <div className="grid gap-1">
-            <h1 className="text-2xl font-bold tracking-tight">EasioProtect</h1>
-            <p className="text-muted-foreground">Keep ads and unwanted websites away from your whole home</p>
+            <h1 className="text-2xl font-bold tracking-tight">JoK</h1>
+            <p className="text-muted-foreground">Say no to ads and unwanted sites.</p>
           </div>
         </div>
         {resetToken ? (

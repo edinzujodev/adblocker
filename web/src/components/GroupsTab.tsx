@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner"
 import { cn } from "cn"
 
-import type { BlockGroup } from "@easioprotect/api"
+import type { BlockGroup } from "@jok/api"
 import { BundlesSection } from "@/components/BundlesSection"
 import { Empty, ListSkeleton } from "@/components/ListStates"
 import { Badge } from "@/components/ui/badge"
