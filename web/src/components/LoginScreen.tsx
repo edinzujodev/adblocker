@@ -89,11 +89,8 @@ function LoginCard({
               onChange={setPassword}
               autoFocus
               invalid={!!error}
-              describedBy="password-help password-error"
+              describedBy="password-error"
             />
-            <p id="password-help" className="text-sm text-muted-foreground">
-              Forgot it? Enter the master password to set a new one.
-            </p>
             <p id="password-error" role="alert" className="text-sm font-medium text-destructive empty:hidden">
               {error}
             </p>

@@ -138,9 +138,6 @@ function LoginCard({
             returnKeyType="go"
             onSubmitEditing={submit}
           />
-          <Text className="text-sm text-muted-foreground">
-            Forgot it? Enter the master password to set a new one.
-          </Text>
         </View>
         {!!error && (
           <Text role="alert" className="font-medium text-destructive">
