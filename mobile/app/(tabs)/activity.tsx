@@ -31,7 +31,10 @@ export default function ActivityScreen() {
 
   return (
     <Screen onRefresh={() => Promise.all([recent.reload(), top.reload()])}>
-      <PageHeader title="Activity" description="What EasioProtect blocked. Updates by itself." />
+      <PageHeader
+        title="Activity"
+        description="Everything EasioProtect stopped in your home. Updates by itself."
+      />
 
       <Card>
         <CardHeader>
@@ -51,7 +54,7 @@ export default function ActivityScreen() {
                   <View className="flex-1">
                     <Text className="font-medium">{q.domain}</Text>
                     <Text className="text-sm text-muted-foreground">
-                      {timeAgo(q.time)} · from {q.client}
+                      {timeAgo(q.time)} · device {q.client}
                       {q.count > 1 ? ` · ${q.count} times` : ''}
                     </Text>
                   </View>

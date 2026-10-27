@@ -22,7 +22,7 @@ export function LoginScreen({ onLoggedIn }: { onLoggedIn: () => void }) {
           <Logo className="size-16" />
           <div className="grid gap-1">
             <h1 className="text-2xl font-bold tracking-tight">EasioProtect</h1>
-            <p className="text-muted-foreground">Ad and site blocking for your home network</p>
+            <p className="text-muted-foreground">Keep ads and unwanted websites away from your whole home</p>
           </div>
         </div>
         {resetToken ? (

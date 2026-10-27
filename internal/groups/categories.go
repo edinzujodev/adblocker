@@ -89,20 +89,20 @@ var Categories = []Category{
 	{
 		ID:          "gambling",
 		Name:        "Gambling",
-		Description: "Betting, casino and poker sites, from a maintained list (downloaded when switched on).",
+		Description: "Betting, casino and poker sites. Thousands of them, kept up to date.",
 		Source:      stevenBlack + "gambling-only/hosts",
 	},
 	{
 		ID:          "adult",
 		Name:        "Adult",
-		Description: "Adult sites, from a maintained list (downloaded when switched on).",
+		Description: "Porn and other adult sites. Tens of thousands of them, kept up to date.",
 		Entries:     []string{"porn"},
 		Source:      stevenBlack + "porn-only/hosts",
 	},
 	{
 		ID:          "fakenews",
 		Name:        "Fake news",
-		Description: "Known fake news sites, from a maintained list (downloaded when switched on).",
+		Description: "Websites known for spreading fake news. Kept up to date.",
 		Source:      stevenBlack + "fakenews-only/hosts",
 	},
 }

@@ -67,7 +67,7 @@ export function GroupsTab() {
 
       <Card>
         <CardHeader>
-          <CardDescription>Ready-made lists that we keep up to date.</CardDescription>
+          <CardDescription>Ready-made lists of websites. Switch one on to block them all.</CardDescription>
         </CardHeader>
         <CardContent>
           {!categories ? (
@@ -280,7 +280,7 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
         </CardTitle>
         <CardDescription>
           {g.entries.length === 0
-            ? "Add sites or keywords below."
+            ? "Add websites or words below."
             : `${g.entries.length} ${g.entries.length === 1 ? "site" : "sites"} · ${blocks(g) ? "blocked now" : "switched off"}`}
         </CardDescription>
         <CardAction>
@@ -295,7 +295,7 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
       </CardHeader>
       <CardContent className="grid gap-4">
         <form onSubmit={add} className="grid gap-2">
-          <Label htmlFor={inputId}>Add a site or keyword</Label>
+          <Label htmlFor={inputId}>Add a website or word</Label>
           <div className="flex gap-2">
             <Input
               id={inputId}
@@ -315,8 +315,7 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
             </Button>
           </div>
           <p id={`${inputId}-hint`} className="text-sm text-muted-foreground">
-            A word without a dot, like <span className="font-medium text-foreground">youtube</span>, blocks every site
-            containing it.
+            Tip: type just a word, like <span className="font-medium text-foreground">youtube</span>, to block every website with that word in its address.
           </p>
         </form>
 

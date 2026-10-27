@@ -105,8 +105,8 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
         </Text>
         <Text className="text-center text-muted-foreground">
           {on
-            ? 'Ads, trackers and the groups you switched on are blocked on every device that uses EasioProtect.'
-            : 'Everything is let through until you turn protection back on.'}
+            ? 'Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses EasioProtect.'
+            : "Nothing is blocked right now, not even the sites you chose. Turn protection back on when you're ready."}
         </Text>
       </View>
       <Button
@@ -125,9 +125,9 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
 function Stats({ status }: { status?: Status }) {
   const items = status && [
     { label: 'Blocked', value: formatNumber(status.blockedQueries), icon: ShieldBanIcon },
-    { label: 'Requests checked', value: formatNumber(status.totalQueries), icon: GlobeIcon },
+    { label: 'Sites checked', value: formatNumber(status.totalQueries), icon: GlobeIcon },
     {
-      label: 'Share blocked',
+      label: 'Of sites blocked',
       value: percent(status.blockedQueries, status.totalQueries),
       icon: PercentIcon,
     },
@@ -161,8 +161,8 @@ function GroupsSummary({ names }: { names?: string[] }) {
           {!names
             ? 'Loading…'
             : names.length === 0
-              ? 'Only ads and trackers. Block social media, games and more with one switch.'
-              : `Ads and trackers, plus ${names.length} ${names.length === 1 ? 'group' : 'groups'}:`}
+              ? 'Right now, only ads and trackers. You can also block social media, games, adult sites and more, each with one switch.'
+              : 'Ads and trackers, plus:'}
         </CardDescription>
       </CardHeader>
       <CardContent className="gap-4">
@@ -188,12 +188,12 @@ function GroupsSummary({ names }: { names?: string[] }) {
 }
 
 const reasonText: Record<CheckResult['reason'], string> = {
-  custom: "It's on your own blocked list.",
+  custom: 'You added it to your Always block list.',
   group: "It's in a group you switched on.",
   blocklist: "It's a known ad or tracker.",
-  allowlist: "It's on your always-allowed list.",
+  allowlist: 'You added it to your Always allow list.',
   disabled: 'It would be blocked, but protection is paused.',
-  'not-listed': "It isn't on any list.",
+  'not-listed': "Nothing you've set up blocks it.",
 };
 
 function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
@@ -238,11 +238,11 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle>Is a site blocked?</CardTitle>
-        <CardDescription>Check any site, and allow or block it from here.</CardDescription>
+        <CardDescription>Type a website to see if your family can open it.</CardDescription>
       </CardHeader>
       <CardContent className="gap-4">
         <View className="gap-2">
-          <Label nativeID="check-site">Site address</Label>
+          <Label nativeID="check-site">Website</Label>
           <View className="flex-row gap-2">
             <Input
               aria-labelledby="check-site"
@@ -360,8 +360,7 @@ function ThisComputerCard({
   if (!pc?.supported) return null;
 
   const adapters = pc.adapters ?? [];
-  const servers = adapters.flatMap((a) => a.servers ?? []);
-  const backup = servers.find((ip) => ip !== servers[0]);
+
   const disabled = busy || !pc.admin || adapters.length === 0;
 
   async function toggle(enabled: boolean) {
@@ -369,7 +368,7 @@ function ThisComputerCard({
     try {
       await api.setThisComputer(enabled);
       toast.show(
-        enabled ? `${pc!.computer} is now protected` : `${pc!.computer} is back to normal DNS`
+        enabled ? `${pc!.computer} is now protected` : `${pc!.computer} is no longer protected`
       );
     } catch (err) {
       onError(err);
@@ -388,17 +387,19 @@ function ThisComputerCard({
           disabled={disabled}
           role="switch"
           aria-checked={pc.enabled}
-          aria-label={`Protect the server computer, ${pc.computer}`}
+          aria-label={`Protect the computer running EasioProtect, ${pc.computer}`}
           className="flex-row items-center gap-4">
           <View className="h-12 w-12 items-center justify-center rounded-full bg-muted">
             <Icon as={MonitorIcon} size={22} className="text-muted-foreground" />
           </View>
           <View className="flex-1 gap-0.5">
-            <Text className="font-semibold">Protect the server computer ({pc.computer})</Text>
+            <Text className="font-semibold">
+              Protect the computer running EasioProtect ({pc.computer})
+            </Text>
             <Text className="text-sm text-muted-foreground">
               {pc.enabled
-                ? `On.${backup ? ` If EasioProtect stops, it falls back to ${backup}.` : ''}`
-                : `Off. It uses ${servers[0] ?? 'automatic DNS'}.`}
+                ? 'On. If EasioProtect ever stops, this computer keeps working normally.'
+                : "Off. That computer isn't protected yet."}
             </Text>
           </View>
           <Switch checked={pc.enabled} onCheckedChange={toggle} disabled={disabled} aria-hidden />

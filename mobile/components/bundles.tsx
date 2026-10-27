@@ -35,7 +35,7 @@ export function BundlesSection({ bundles, groups, onChange }: Props) {
     <>
       <PageHeader
         title="Bundles"
-        description="Put groups together, like “Kids mode”, and switch them all on with one switch. Turning a bundle off leaves each group's own switch as it was."
+        description="One switch for several groups, like “Bedtime” or “Kids mode”. Switching a bundle off won't change the groups' own switches."
       />
       {bundles?.map((b) => (
         <BundleCard key={b.id} bundle={b} groups={groups ?? []} onChange={onChange} />
@@ -166,7 +166,7 @@ function BundleCard({
           </View>
           <CardDescription>
             {members.length === 0
-              ? 'No groups yet.'
+              ? 'No groups yet. Choose which ones to include.'
               : `${members.length} ${members.length === 1 ? 'group' : 'groups'} · ${b.enabled ? 'all blocked now' : 'switched off'}`}
           </CardDescription>
         </View>
@@ -180,7 +180,7 @@ function BundleCard({
       <CardContent className="gap-4">
         {editing ? (
           <View className="gap-2">
-            <Text className="text-sm font-medium">Groups in {b.name}</Text>
+            <Text className="text-sm font-medium">What {b.name} blocks</Text>
             <View className="rounded-xl border border-border p-1">
               {groups.map((g) => {
                 const on = chosen.includes(g.id);
@@ -212,7 +212,7 @@ function BundleCard({
             <View className="flex-row gap-2 pt-2">
               <Button onPress={save} disabled={busy}>
                 <Icon as={CheckIcon} size={18} />
-                <Text>Save groups</Text>
+                <Text>Save</Text>
               </Button>
               {b.groups.length > 0 && (
                 <Button variant="ghost" onPress={() => setEditing(false)}>

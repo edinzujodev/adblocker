@@ -166,7 +166,7 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 		return
 	case !ok:
 		s.logger.Printf("web: failed login from %s", r.RemoteAddr)
-		writeError(w, http.StatusUnauthorized, "wrong password")
+		writeError(w, http.StatusUnauthorized, "that password isn't right")
 		return
 	}
 
@@ -243,7 +243,7 @@ func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 	}
 	s.loginMu.Unlock()
 	if !ok {
-		writeError(w, http.StatusForbidden, "your current password is wrong")
+		writeError(w, http.StatusForbidden, "your current password isn't right")
 		return
 	}
 	if !s.setPassword(w, req.Password, requestToken(r)) {

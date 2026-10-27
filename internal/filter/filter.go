@@ -28,7 +28,7 @@ const (
 var (
 	ErrInvalidDomain  = blocklist.ErrInvalidDomain
 	ErrInvalidKeyword = blocklist.ErrInvalidKeyword
-	ErrNotFound       = errors.New("domain is not on the list")
+	ErrNotFound       = errors.New("that website isn't on the list")
 )
 
 // Result explains a blocking decision.

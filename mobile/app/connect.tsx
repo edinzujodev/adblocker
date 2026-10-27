@@ -38,7 +38,7 @@ export default function ConnectScreen() {
                 EasioProtect
               </Text>
               <Text className="text-center text-muted-foreground">
-                Ad and site blocking for your home network
+                Keep ads and unwanted websites away from your whole home
               </Text>
             </View>
           </View>
@@ -62,7 +62,8 @@ export default function ConnectScreen() {
           )}
 
           <Text className="text-center text-sm text-muted-foreground">
-            Your phone must be on the same Wi-Fi as the computer running EasioProtect.
+            Your phone needs to be on your home Wi-Fi, the same one as the computer running
+            EasioProtect.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

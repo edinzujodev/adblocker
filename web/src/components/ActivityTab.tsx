@@ -28,7 +28,7 @@ export function ActivityTab() {
     <>
       <div className="grid gap-1">
         <h1 className="text-2xl font-bold tracking-tight">Activity</h1>
-        <p className="text-muted-foreground">What EasioProtect blocked. Updates by itself.</p>
+        <p className="text-muted-foreground">Everything EasioProtect stopped in your home. Updates by itself.</p>
       </div>
 
       <Card>
@@ -48,7 +48,7 @@ export function ActivityTab() {
                   <div className="min-w-0">
                     <p className="font-medium break-all">{q.domain}</p>
                     <p className="text-sm text-muted-foreground">
-                      {timeAgo(q.time)} · from {q.client}
+                      {timeAgo(q.time)} · device {q.client}
                       {q.count > 1 && ` · ${q.count} times`}
                     </p>
                   </div>

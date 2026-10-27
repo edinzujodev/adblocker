@@ -64,7 +64,10 @@ export default function GroupsScreen() {
       <BundlesSection bundles={bundles} groups={groups} onChange={reload} />
 
       <View className="pt-2">
-        <PageHeader title="Categories" description="Ready-made lists that we keep up to date." />
+        <PageHeader
+          title="Categories"
+          description="Ready-made lists of websites. Switch one on to block them all."
+        />
       </View>
       <Card>
         <CardContent className="gap-1 px-2">
@@ -302,7 +305,7 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
           </View>
           <CardDescription>
             {g.entries.length === 0
-              ? 'Add sites or keywords below.'
+              ? 'Add websites or words below.'
               : `${g.entries.length} ${g.entries.length === 1 ? 'site' : 'sites'} · ${blocks(g) ? 'blocked now' : 'switched off'}`}
           </CardDescription>
         </View>
@@ -315,7 +318,7 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
       </CardHeader>
       <CardContent className="gap-4">
         <View className="gap-2">
-          <Label nativeID={labelId}>Add a site or keyword</Label>
+          <Label nativeID={labelId}>Add a website or word</Label>
           <View className="flex-row gap-2">
             <Input
               aria-labelledby={labelId}
@@ -335,8 +338,8 @@ function GroupCard({ group: g, onChange }: { group: BlockGroup; onChange: () => 
             </Button>
           </View>
           <Text className="text-sm text-muted-foreground">
-            A word without a dot, like <Text className="text-sm font-semibold">youtube</Text>,
-            blocks every site containing it.
+            Tip: type just a word, like <Text className="text-sm font-semibold">youtube</Text>, to
+            block every website with that word in its address.
           </Text>
         </View>
 

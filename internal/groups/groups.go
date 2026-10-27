@@ -23,10 +23,10 @@ const maxNameLen = 50
 var (
 	ErrNoGroup     = errors.New("no such group")
 	ErrNoBundle    = errors.New("no such bundle")
-	ErrNotFound    = errors.New("entry is not in the group")
+	ErrNotFound    = errors.New("that website isn't in this group")
 	ErrBuiltin     = errors.New("built-in categories can only be switched on or off")
-	ErrInvalidName = fmt.Errorf("give it a name of up to %d characters", maxNameLen)
-	ErrDownload    = errors.New("could not download the list")
+	ErrInvalidName = fmt.Errorf("give it a name (up to %d characters)", maxNameLen)
+	ErrDownload    = errors.New("couldn't download the list; check the internet connection and try again")
 )
 
 // Group describes a group for the web interface.

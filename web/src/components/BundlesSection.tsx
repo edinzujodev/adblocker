@@ -25,8 +25,7 @@ export function BundlesSection({ bundles, groups, onChange }: Props) {
       <div className="grid gap-1">
         <h2 className="text-xl font-bold tracking-tight">Bundles</h2>
         <p className="text-muted-foreground">
-          Put groups together, like “Kids mode”, and switch them all on with one switch. Turning a bundle off leaves
-          each group's own switch as it was.
+          One switch for several groups, like “Bedtime” or “Kids mode”. Switching a bundle off won't change the groups' own switches.
         </p>
       </div>
       {bundles?.map((b) => <BundleCard key={b.id} bundle={b} groups={groups ?? []} onChange={onChange} />)}
@@ -141,7 +140,7 @@ function BundleCard({ bundle: b, groups, onChange }: { bundle: Bundle; groups: B
         </CardTitle>
         <CardDescription>
           {members.length === 0
-            ? "No groups yet."
+            ? "No groups yet. Choose which ones to include."
             : `${members.length} ${members.length === 1 ? "group" : "groups"} · ${b.enabled ? "all blocked now" : "switched off"}`}
         </CardDescription>
         <CardAction>
@@ -157,7 +156,7 @@ function BundleCard({ bundle: b, groups, onChange }: { bundle: Bundle; groups: B
       <CardContent className="grid gap-4">
         {editing ? (
           <fieldset className="grid gap-2">
-            <legend className="mb-2 text-sm font-medium">Groups in {b.name}</legend>
+            <legend className="mb-2 text-sm font-medium">What {b.name} blocks</legend>
             <div className="grid gap-1 rounded-xl border p-1">
               {groups.map((g) => {
                 const on = chosen.includes(g.id)
@@ -184,7 +183,7 @@ function BundleCard({ bundle: b, groups, onChange }: { bundle: Bundle; groups: B
             <div className="flex gap-2 pt-2">
               <Button onClick={save} disabled={busy}>
                 <CheckIcon aria-hidden="true" />
-                Save groups
+                Save
               </Button>
               {b.groups.length > 0 && (
                 <Button variant="ghost" onClick={() => setEditing(false)}>

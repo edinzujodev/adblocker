@@ -33,8 +33,8 @@ var ignored = map[string]bool{
 
 // Errors returned by AddEntry.
 var (
-	ErrInvalidDomain  = errors.New("not a valid domain name")
-	ErrInvalidKeyword = fmt.Errorf("not a valid keyword: use at least %d letters or digits", MinKeywordLen)
+	ErrInvalidDomain  = errors.New("that doesn't look like a website address, like example.com")
+	ErrInvalidKeyword = fmt.Errorf("a word to block needs at least %d letters or numbers", MinKeywordLen)
 )
 
 // MinKeywordLen is the shortest keyword accepted, so that a short word such

@@ -94,8 +94,8 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
         </h1>
         <p className="mx-auto max-w-md text-muted-foreground">
           {on
-            ? "Ads, trackers and the groups you switched on are blocked on every device that uses EasioProtect."
-            : "Everything is let through until you turn protection back on."}
+            ? "Ads, trackers and the sites you chose to block are stopped on every phone, tablet and computer that uses EasioProtect."
+            : "Nothing is blocked right now, not even the sites you chose. Turn protection back on when you're ready."}
         </p>
       </div>
       <Button
@@ -115,8 +115,8 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
 function Stats({ status }: { status?: Status }) {
   const items = status && [
     { label: "Blocked", value: formatNumber(status.blockedQueries), icon: ShieldBanIcon },
-    { label: "Requests checked", value: formatNumber(status.totalQueries), icon: GlobeIcon },
-    { label: "Share blocked", value: percent(status.blockedQueries, status.totalQueries), icon: PercentIcon },
+    { label: "Sites checked", value: formatNumber(status.totalQueries), icon: GlobeIcon },
+    { label: "Of sites blocked", value: percent(status.blockedQueries, status.totalQueries), icon: PercentIcon },
   ]
   return (
     <section aria-label="Since EasioProtect started" className="grid grid-cols-3 gap-3">
@@ -151,8 +151,8 @@ function GroupsSummary({ go }: { go: (tab: Tab) => void }) {
           {!groups
             ? "Loading…"
             : on.length === 0
-              ? "Only ads and trackers. Block social media, games and more with one switch."
-              : `Ads and trackers, plus ${on.length} ${on.length === 1 ? "group" : "groups"}:`}
+              ? "Right now, only ads and trackers. You can also block social media, games, adult sites and more, each with one switch."
+              : "Ads and trackers, plus:"}
         </CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -177,12 +177,12 @@ function GroupsSummary({ go }: { go: (tab: Tab) => void }) {
 }
 
 const reasonText: Record<CheckResult["reason"], string> = {
-  custom: "It's on your own blocked list.",
+  custom: "You added it to your Always block list.",
   group: "It's in a group you switched on.",
   blocklist: "It's a known ad or tracker.",
-  allowlist: "It's on your always-allowed list.",
+  allowlist: "You added it to your Always allow list.",
   disabled: "It would be blocked, but protection is paused.",
-  "not-listed": "It isn't on any list.",
+  "not-listed": "Nothing you've set up blocks it.",
 }
 
 function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
@@ -231,11 +231,11 @@ function CheckSiteCard({ blockingOn }: { blockingOn?: boolean }) {
     <Card>
       <CardHeader>
         <CardTitle>Is a site blocked?</CardTitle>
-        <CardDescription>Check any site, and allow or block it from here.</CardDescription>
+        <CardDescription>Type a website to see if your family can open it.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <form onSubmit={submit} className="grid gap-2">
-          <Label htmlFor="check-site">Site address</Label>
+          <Label htmlFor="check-site">Website</Label>
           <div className="flex gap-2">
             <Input
               id="check-site"
@@ -332,14 +332,14 @@ function ThisComputerCard() {
   if (!pc?.supported) return null
 
   const adapters = pc.adapters ?? []
-  const servers = adapters.flatMap((a) => a.servers ?? [])
-  const backup = servers.find((ip) => ip !== servers[0])
+  
+  
 
   async function toggle(enabled: boolean) {
     setBusy(true)
     try {
       await api.setThisComputer(enabled)
-      toast.success(enabled ? "This computer is now protected" : "This computer is back to normal DNS")
+      toast.success(enabled ? "This computer is now protected" : "This computer is no longer protected")
     } catch (err) {
       onError(err)
     } finally {
@@ -359,8 +359,8 @@ function ThisComputerCard() {
             <span className="font-semibold">Protect this computer ({pc.computer})</span>
             <span className="text-sm text-muted-foreground">
               {pc.enabled
-                ? `On.${backup ? ` If EasioProtect stops, it falls back to ${backup}.` : ""}`
-                : `Off. This computer uses ${servers[0] ?? "automatic DNS"}.`}
+                ? "On. If EasioProtect ever stops, this computer keeps working normally."
+                : "Off. This computer isn't protected yet."}
             </span>
           </label>
           <Switch

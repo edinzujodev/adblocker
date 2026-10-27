@@ -13,7 +13,8 @@ export class AuthError extends Error {
 export class ApiError extends Error {
   readonly status: number
   constructor(status: number, message: string) {
-    super(message)
+    // The server writes messages in lowercase; show them as sentences.
+    super(message.charAt(0).toUpperCase() + message.slice(1))
     this.status = status
   }
 }

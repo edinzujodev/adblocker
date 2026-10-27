@@ -15,16 +15,16 @@ export function ListsTab() {
     <>
       <div className="grid gap-1">
         <h1 className="text-2xl font-bold tracking-tight">My lists</h1>
-        <p className="text-muted-foreground">Single sites you always block or always allow.</p>
+        <p className="text-muted-foreground">Your own exceptions: websites to always block, and websites to always allow.</p>
       </div>
       <DomainListCard
         list="custom"
         icon={BanIcon}
         title="Always block"
-        description="Subdomains are included: instagram.com also blocks www.instagram.com."
-        label="Site or keyword to block"
+        description="Blocking a website blocks all of it: instagram.com also covers www.instagram.com."
+        label="Website or word to block"
         placeholder="tiktok.com or instagram"
-        hint="A word without a dot blocks every site containing it."
+        hint="Tip: type just a word, like instagram, to block every website with that word in its address."
         addLabel="Block"
         empty="You haven't blocked any sites yourself."
         added={(d) => `Blocked ${d}`}
@@ -34,11 +34,11 @@ export function ListsTab() {
         list="allowlist"
         icon={CircleCheckIcon}
         title="Always allow"
-        description="These are never blocked, not even by a group or the ad blocklist."
-        label="Site to allow"
+        description="These always work, even if a group or the ad filter would block them. Add a site here if something your family needs stops working."
+        label="Website to allow"
         placeholder="example.com"
         addLabel="Allow"
-        empty="No always-allowed sites."
+        empty="Nothing here yet."
         added={(d) => `${d} is always allowed`}
         removed={(d) => `${d} removed from allowed`}
       />
