@@ -74,19 +74,19 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
           </a>
           <StatusPill status={status} />
 
-          <nav aria-label="Sections" className="ml-auto hidden gap-1 md:flex">
+          <nav aria-label="Sections" className="ml-auto hidden gap-1 lg:flex">
             {tabs.map((t) => (
               <TabLink key={t.id} tab={t} active={tab === t.id} layout="row" />
             ))}
           </nav>
-          <Button variant="ghost" onClick={logout} className="ml-auto text-muted-foreground md:ml-2">
+          <Button variant="ghost" onClick={logout} className="ml-auto text-muted-foreground lg:ml-2">
             <LogOutIcon aria-hidden="true" />
             <span className="max-lg:sr-only">Log out</span>
           </Button>
         </div>
       </header>
 
-      <main className="mx-auto grid max-w-2xl gap-5 px-4 pt-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] md:pb-10">
+      <main className="mx-auto grid max-w-2xl gap-5 px-4 pt-5 pb-[calc(6.5rem+env(safe-area-inset-bottom))] lg:pb-10">
         {tab === "home" && <HomeTab status={status} onStatusChange={reload} go={go} />}
         {tab === "groups" && <GroupsTab />}
         {tab === "activity" && <ActivityTab />}
@@ -99,7 +99,7 @@ export function AppShell({ onLoggedOut }: { onLoggedOut: () => void }) {
 
       <nav
         aria-label="Sections"
-        className="fixed inset-x-0 bottom-0 z-10 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+        className="fixed inset-x-0 bottom-0 z-10 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
       >
         <div className="mx-auto flex max-w-2xl">
           {tabs.map((t) => (
