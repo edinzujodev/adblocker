@@ -1,5 +1,10 @@
 # EasioProtect
 
+> **Not open source.** EasioProtect is proprietary software, © 2026 Edin
+> Zujo. All rights reserved. The code is public for viewing only: you may
+> not copy, modify, reuse, distribute or build on it, in whole or in part,
+> without written permission. See [LICENSE](LICENSE).
+
 EasioProtect is a home ad blocker in the style of Pi-hole: a small DNS server that answers
 ad/tracker domains with `0.0.0.0` / `::` and forwards everything else to an
 upstream resolver. It is a single Go binary, built to run on a Windows PC for
@@ -234,3 +239,10 @@ Clear-DnsClientCache
 While the PC points at `127.0.0.1`, the adblocker must be running, or name
 resolution stops. Browsers with "secure DNS" (DNS-over-HTTPS) enabled skip
 it, so turn that off in the browser to see blocking.
+
+## License
+
+Copyright © 2026 Edin Zujo. All rights reserved. This is not open source
+software and no license is granted to use, copy, modify or distribute it.
+See [LICENSE](LICENSE) for the full terms. For permission requests, contact
+[edinzujodev on GitHub](https://github.com/edinzujodev).
