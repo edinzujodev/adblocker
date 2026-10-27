@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "copywriting": {
+      "source": "LeadMagic/gtm-skills",
+      "sourceType": "github",
+      "skillPath": "skills/creative/copywriting/SKILL.md",
+      "computedHash": "6d1f7c56b5fe97560aaa856c76c3abb224e002966fe876f7554327f0ac08db72"
+    }
+  }
+}

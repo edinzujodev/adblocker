@@ -67,13 +67,23 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
 
   return (
     <Card className="items-center gap-5 py-8 text-center">
-      <div
-        className={cn(
-          "grid size-28 place-items-center rounded-full ring-8 transition-colors duration-300",
-          on ? "bg-success/12 text-success ring-success/6" : "bg-destructive/12 text-destructive ring-destructive/6",
+      <div className="relative grid place-items-center">
+        {/* Pulses only while protected, so the motion itself says "active".
+            motion-safe: no pulse for people who ask their device for less motion. */}
+        {on && (
+          <span
+            aria-hidden="true"
+            className="absolute inset-0 rounded-full bg-success/30 motion-safe:animate-shield-pulse"
+          />
         )}
-      >
-        <Icon className="size-14" strokeWidth={1.75} aria-hidden="true" />
+        <div
+          className={cn(
+            "relative grid size-28 place-items-center rounded-full ring-8 transition-colors duration-300",
+            on ? "bg-success/12 text-success ring-success/6" : "bg-destructive/12 text-destructive ring-destructive/6",
+          )}
+        >
+          <Icon className="size-14" strokeWidth={1.75} aria-hidden="true" />
+        </div>
       </div>
       <div className="grid gap-1.5 px-6">
         <h1 className="text-2xl font-bold tracking-tight" aria-live="polite">

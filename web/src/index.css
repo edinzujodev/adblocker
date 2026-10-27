@@ -49,6 +49,16 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* "You're protected": a ring that slowly pulses out of the shield. Only
+   transform and opacity animate, so it stays smooth and cheap. */
+@theme {
+    --animate-shield-pulse: shield-pulse 2.6s cubic-bezier(0, 0, 0.2, 1) infinite;
+    @keyframes shield-pulse {
+        0% { transform: scale(1); opacity: 0.45; }
+        80%, 100% { transform: scale(1.5); opacity: 0; }
+    }
+}
+
 :root {
     /* Shield blue + protected green + paused red (ui-ux-pro-max: VPN & privacy tool).
        Every text pair below is >= 4.5:1. */
