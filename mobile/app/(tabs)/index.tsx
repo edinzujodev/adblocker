@@ -1,3 +1,4 @@
+import { PulseRing } from '@/components/pulse-ring';
 import { Screen } from '@/components/screen';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Text } from '@/components/ui/text';
 import { formatNumber, percent } from '@/lib/format';
 import { useApi } from '@/lib/session';
 import { useStatus } from '@/lib/status';
+import { THEME } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import { usePolled } from '@/lib/use-polled';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,7 @@ import {
   ShieldCheckIcon,
   ShieldOffIcon,
 } from 'lucide-react-native';
+import { useColorScheme } from 'nativewind';
 import * as React from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
@@ -49,6 +52,8 @@ export default function HomeScreen() {
 
 /** The one thing most people come here for: is protection on, and a big button to change it. */
 function ProtectionCard({ status, onChange }: { status?: Status; onChange: () => Promise<void> }) {
+  const { colorScheme } = useColorScheme();
+  const theme = THEME[colorScheme ?? 'light'];
   const { api, onError } = useApi();
   const toast = useToast();
   const [busy, setBusy] = React.useState(false);
@@ -71,17 +76,24 @@ function ProtectionCard({ status, onChange }: { status?: Status; onChange: () =>
 
   return (
     <Card className="items-center gap-5 py-8">
-      <View
-        className={cn(
-          'h-32 w-32 items-center justify-center rounded-full border-8',
-          on ? 'border-success/5 bg-success/15' : 'border-destructive/5 bg-destructive/15'
-        )}>
-        <Icon
-          as={on ? ShieldCheckIcon : ShieldOffIcon}
-          size={60}
-          strokeWidth={1.75}
-          className={on ? 'text-success' : 'text-destructive'}
-        />
+      <View className="items-center justify-center">
+        {/* Pulses only while protected, so the motion itself says "active". */}
+        {on && <PulseRing size={128} color={theme.success} />}
+        {/* Opaque backing, so the pulse shows only outside the tinted circle. */}
+        <View className="rounded-full bg-card">
+          <View
+            className={cn(
+              'h-32 w-32 items-center justify-center rounded-full border-8',
+              on ? 'border-success/5 bg-success/15' : 'border-destructive/5 bg-destructive/15'
+            )}>
+            <Icon
+              as={on ? ShieldCheckIcon : ShieldOffIcon}
+              size={60}
+              strokeWidth={1.75}
+              className={on ? 'text-success' : 'text-destructive'}
+            />
+          </View>
+        </View>
       </View>
       <View className="gap-1.5 px-6">
         <Text
