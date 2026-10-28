@@ -23,7 +23,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#0f766e"
+        "backgroundColor": "#1e3a5f"
       },
       "package": "com.edinzujo.jok"
     },
@@ -39,7 +39,7 @@
         {
           "image": "./assets/images/splash.png",
           "resizeMode": "contain",
-          "backgroundColor": "#0f766e"
+          "backgroundColor": "#1e3a5f"
         }
       ],
       "expo-status-bar",
